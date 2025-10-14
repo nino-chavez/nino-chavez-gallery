@@ -6,22 +6,6 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {},
-  "build": {
-    "env": {
-      "SMUGMUG_API_KEY": "@smugmug_api_key",
-      "SMUGMUG_API_SECRET": "@smugmug_api_secret",
-      "SMUGMUG_ACCESS_TOKEN": "@smugmug_access_token",
-      "SMUGMUG_ACCESS_TOKEN_SECRET": "@smugmug_access_token_secret",
-      "ANTHROPIC_API_KEY": "@anthropic_api_key",
-      "OPENAI_API_KEY": "@openai_api_key",
-      "GOOGLE_API_KEY": "@google_api_key",
-      "PINECONE_API_KEY": "@pinecone_api_key",
-      "PINECONE_INDEX_NAME": "@pinecone_index_name",
-      "UPSTASH_REDIS_URL": "@upstash_redis_url",
-      "UPSTASH_REDIS_TOKEN": "@upstash_redis_token",
-      "VISION_PROVIDER": "auto"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
