@@ -16,7 +16,7 @@ export function AlbumGallery({ images }: AlbumGalleryProps) {
   // Transform SmugMug images to lightbox format
   const lightboxPhotos = images.map(img => ({
     imageKey: img.ImageKey,
-    imageUrl: img.ArchivedUri || img.ImageDownloadUrl || img.ThumbnailUrl,
+    imageUrl: img.LargeImageUrl || img.ArchivedUri || img.ThumbnailUrl,
     thumbnailUrl: img.ThumbnailUrl,
     title: img.Title,
     caption: img.Caption,

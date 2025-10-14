@@ -130,9 +130,10 @@ async function analyzeWithClaude(
     const match = imageUrl.match(/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/);
     if (!match) throw new Error('Invalid base64 image format');
 
+    const mediaType = match[1] === 'jpg' ? 'jpeg' : match[1];
     imageSource = {
-      type: 'base64',
-      media_type: `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` as Anthropic.ImageBlockParam['source']['media_type'],
+      type: 'base64' as const,
+      media_type: `image/${mediaType}` as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
       data: match[2],
     };
   } else if (imageUrl.startsWith('http')) {
@@ -180,7 +181,7 @@ async function analyzeWithClaude(
     }
 
     imageSource = {
-      type: 'base64',
+      type: 'base64' as const,
       media_type: fullMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
       data: base64,
     };

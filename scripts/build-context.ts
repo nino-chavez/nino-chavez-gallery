@@ -1,19 +1,16 @@
 #!/usr/bin/env tsx
 /**
- * Gallery Context Builder
+ * Intelligent Gallery Context Builder
  *
- * Fetches all enriched photo metadata from SmugMug and generates
- * a gallery-context.json file for the Next.js app.
- *
- * This context includes:
- * - Album structure
- * - Photo metadata (titles, captions, keywords)
- * - Event clustering data
- * - Search optimization data
+ * Features:
+ * - Full rebuild: Complete context regeneration
+ * - Incremental: Only new/changed albums since last build
+ * - Change detection: Lightweight check for updates
  *
  * Usage:
  *   pnpm run build:context              # Full rebuild
- *   pnpm run build:context --incremental # Only fetch updates
+ *   pnpm run build:context --incremental # Incremental update only
+ *   pnpm run build:context --check-latest # Check for new content (no build)
  */
 
 // Load environment variables
@@ -22,6 +19,7 @@ import { resolve } from 'path';
 config({ path: resolve(process.cwd(), '.env.local') });
 
 import { writeFile } from 'fs/promises';
+import { existsSync, readFileSync } from 'fs';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
 
@@ -219,9 +217,59 @@ async function processAlbum(album: any): Promise<Album> {
 }
 
 /**
+ * Check for latest album info (lightweight, no logging)
+ */
+async function checkLatestAlbumInfo(): Promise<{latestAlbumDate: string, totalAlbums: number}> {
+  const user = await getAuthUser();
+
+  let allAlbums: any[] = [];
+  let start = 1;
+  const count = 100;
+
+  // Pagination loop - fetch all pages (no logging)
+  while (true) {
+    const response = await smugmugRequest(`${user.Uris.UserAlbums.Uri}?count=${count}&start=${start}`);
+    const pageAlbums = response.Album || [];
+    allAlbums.push(...pageAlbums);
+
+    if (pageAlbums.length < count || !response.Pages?.NextPage) {
+      break;
+    }
+
+    start += count;
+  }
+
+  const latestAlbum = allAlbums.reduce((latest, album) =>
+    new Date(album.LastUpdated) > new Date(latest.LastUpdated) ? album : latest
+  );
+
+  return {
+    latestAlbumDate: latestAlbum.LastUpdated,
+    totalAlbums: allAlbums.length
+  };
+}
+
+/**
  * Main execution
  */
 async function main() {
+  const isIncremental = process.argv.includes('--incremental');
+  const isCheckLatest = process.argv.includes('--check-latest');
+
+  // Handle check-latest mode (lightweight, no file operations)
+  if (isCheckLatest) {
+    if (!process.env.SMUGMUG_API_KEY) {
+      console.error('❌ SmugMug credentials not set');
+      process.exit(1);
+    }
+
+    const latestInfo = await checkLatestAlbumInfo();
+
+    // Output ONLY JSON for wrapper script to parse (no extra logging)
+    process.stdout.write(JSON.stringify(latestInfo));
+    return;
+  }
+
   console.log('🚀 Building Gallery Context\n');
 
   // Validate environment
@@ -236,12 +284,33 @@ async function main() {
   const albums = await getAlbums();
   console.log(`📚 Found ${albums.length} albums\n`);
 
+  // Handle incremental mode
+  let albumsToProcess = albums;
+  if (isIncremental && existsSync(resolve(process.cwd(), 'gallery-context.json'))) {
+    const existingContext = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'gallery-context.json'), 'utf8')
+    );
+
+    const existingAlbumKeys = new Set(existingContext.albums.map((a: Album) => a.albumKey));
+    const newAlbums = albums.filter(album => !existingAlbumKeys.has(album.AlbumKey));
+
+    console.log(`⚡ Incremental mode: ${newAlbums.length} new albums to process`);
+    console.log(`   (skipping ${existingAlbumKeys.size} existing albums)\n`);
+
+    if (newAlbums.length === 0) {
+      console.log('✅ No new albums found - context is up to date\n');
+      return;
+    }
+
+    albumsToProcess = newAlbums;
+  }
+
   // Process albums
   const processedAlbums: Album[] = [];
   let totalPhotos = 0;
   let enrichedPhotos = 0;
 
-  for (const album of albums) {
+  for (const album of albumsToProcess) {
     const processed = await processAlbum(album);
     processedAlbums.push(processed);
 
@@ -253,28 +322,50 @@ async function main() {
 
   // Build context
   const user = await getAuthUser();
-  const context: GalleryContext = {
-    username: user.NickName,
-    generatedAt: new Date().toISOString(),
-    totalAlbums: processedAlbums.length,
-    totalPhotos,
-    enrichedPhotos,
-    albums: processedAlbums,
-  };
+
+  let finalContext: GalleryContext;
+
+  if (isIncremental && existsSync(resolve(process.cwd(), 'gallery-context.json'))) {
+    // Incremental: merge with existing context
+    const existingContext = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'gallery-context.json'), 'utf8')
+    ) as GalleryContext;
+
+    finalContext = {
+      username: user.NickName,
+      generatedAt: new Date().toISOString(),
+      totalAlbums: existingContext.totalAlbums + processedAlbums.length,
+      totalPhotos: existingContext.totalPhotos + totalPhotos,
+      enrichedPhotos: existingContext.enrichedPhotos + enrichedPhotos,
+      albums: [...existingContext.albums, ...processedAlbums],
+    };
+
+    console.log(`📈 Incremental update: +${processedAlbums.length} albums, +${totalPhotos} photos`);
+  } else {
+    // Full build
+    finalContext = {
+      username: user.NickName,
+      generatedAt: new Date().toISOString(),
+      totalAlbums: processedAlbums.length,
+      totalPhotos,
+      enrichedPhotos,
+      albums: processedAlbums,
+    };
+  }
 
   // Write to file
   const outputPath = resolve(process.cwd(), 'gallery-context.json');
-  await writeFile(outputPath, JSON.stringify(context, null, 2), 'utf-8');
+  await writeFile(outputPath, JSON.stringify(finalContext, null, 2), 'utf-8');
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
   // Summary
   console.log(`\n${'='.repeat(60)}`);
   console.log('✅ Gallery Context Built!\n');
-  console.log(`   Username: ${context.username}`);
-  console.log(`   Albums: ${context.totalAlbums}`);
-  console.log(`   Total photos: ${context.totalPhotos}`);
-  console.log(`   Enriched: ${context.enrichedPhotos} (${((enrichedPhotos / totalPhotos) * 100).toFixed(1)}%)`);
+  console.log(`   Username: ${finalContext.username}`);
+  console.log(`   Albums: ${finalContext.totalAlbums}`);
+  console.log(`   Total photos: ${finalContext.totalPhotos}`);
+  console.log(`   Enriched: ${finalContext.enrichedPhotos} (${((finalContext.enrichedPhotos / finalContext.totalPhotos) * 100).toFixed(1)}%)`);
   console.log(`   Output: ${outputPath}`);
   console.log(`   Duration: ${duration}s`);
   console.log('='.repeat(60) + '\n');

@@ -95,12 +95,8 @@ async function makeSmugMugRequest(endpoint: string): Promise<Response> {
   const url = `${config.baseUrl}${endpoint}`;
   const requestData = { url, method: 'GET' };
 
-  // Generate unique timestamp and nonce per request (prevents replay attacks)
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const nonce = `${crypto.randomBytes(16).toString('hex')}-${process.hrtime.bigint().toString()}`;
-
-  // Generate OAuth signature
-  const auth = oauth.authorize(requestData, token, { timestamp, nonce } as any);
+  // Generate OAuth signature (library generates unique timestamp & nonce automatically)
+  const auth = oauth.authorize(requestData, token);
   const authHeader = oauth.toHeader(auth);
 
   // Request timeout (30 seconds)

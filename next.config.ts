@@ -38,6 +38,9 @@ const nextConfig: NextConfig = {
 
   // Output configuration for Vercel
   output: 'standalone',
+
+  // Silence workspace root warning (monorepo lockfile in parent dir)
+  outputFileTracingRoot: __dirname,
 };
 
 export default nextConfig;
