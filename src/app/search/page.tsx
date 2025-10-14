@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import Fuse from 'fuse.js';
 
 interface Photo {
   imageKey: string;
@@ -15,165 +16,373 @@ interface Photo {
   albumKey: string;
 }
 
+interface FilterState {
+  sports: string[];
+  albums: string[];
+  dateRange: string;
+}
+
 export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
   const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
+  const [filters, setFilters] = useState<FilterState>({
+    sports: [],
+    albums: [],
+    dateRange: 'all',
+  });
+
+  // Available filter options
+  const [availableSports, setAvailableSports] = useState<string[]>([]);
+  const [availableAlbums, setAvailableAlbums] = useState<Array<{ key: string; name: string }>>([]);
 
   // Load all photos on mount
   useEffect(() => {
+    setLoading(true);
     fetch('/api/gallery')
       .then(res => res.json())
       .then(context => {
         const photos: Photo[] = [];
+        const sportsSet = new Set<string>();
+        const albumsMap = new Map<string, string>();
+
         context.albums.forEach((album: any) => {
-          album.photos.forEach((photo: any) => {
-            photos.push({
-              ...photo,
-              albumName: album.name,
-              albumKey: album.albumKey,
-            });
+          albumsMap.set(album.albumKey, album.name);
+
+          // For now, we'll load album details on demand
+          // This is placeholder data until we fetch actual images
+          photos.push({
+            imageKey: album.albumKey,
+            fileName: album.name,
+            title: album.name,
+            caption: album.description || '',
+            keywords: album.keywords ? album.keywords.split(';').map((k: string) => k.trim()) : [],
+            imageUrl: '',
+            thumbnailUrl: '',
+            albumName: album.name,
+            albumKey: album.albumKey,
           });
+
+          // Extract sports from keywords
+          if (album.keywords) {
+            album.keywords.split(';').forEach((keyword: string) => {
+              const trimmed = keyword.trim().toLowerCase();
+              if (trimmed.startsWith('sport:')) {
+                sportsSet.add(trimmed.replace('sport:', ''));
+              } else if (['volleyball', 'basketball', 'soccer', 'baseball', 'softball', 'football'].some(sport => trimmed.includes(sport))) {
+                sportsSet.add(trimmed);
+              }
+            });
+          }
         });
+
         setAllPhotos(photos);
+        setAvailableSports(Array.from(sportsSet).sort());
+        setAvailableAlbums(Array.from(albumsMap.entries()).map(([key, name]) => ({ key, name })));
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load gallery:', err);
+        setLoading(false);
       });
   }, []);
 
-  // Simple client-side keyword search
+  // Fuzzy search with Fuse.js
+  const fuse = useMemo(() => {
+    return new Fuse(allPhotos, {
+      keys: [
+        { name: 'title', weight: 0.4 },
+        { name: 'caption', weight: 0.3 },
+        { name: 'keywords', weight: 0.2 },
+        { name: 'albumName', weight: 0.1 },
+      ],
+      threshold: 0.4, // More lenient matching
+      includeScore: true,
+      minMatchCharLength: 2,
+    });
+  }, [allPhotos]);
+
+  // Perform search
   const handleSearch = (searchQuery: string) => {
     setQuery(searchQuery);
 
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && filters.sports.length === 0 && filters.albums.length === 0) {
       setResults([]);
       return;
     }
 
-    setLoading(true);
+    let filtered = allPhotos;
 
-    // Search across title, caption, and keywords
-    const searchTerms = searchQuery.toLowerCase().split(' ');
-    const matches = allPhotos.filter(photo => {
-      const searchableText = [
-        photo.title,
-        photo.caption,
-        ...photo.keywords,
-        photo.albumName,
-      ].join(' ').toLowerCase();
+    // Apply filters first
+    if (filters.sports.length > 0) {
+      filtered = filtered.filter(photo =>
+        photo.keywords.some(keyword =>
+          filters.sports.some(sport =>
+            keyword.toLowerCase().includes(sport.toLowerCase())
+          )
+        )
+      );
+    }
 
-      return searchTerms.every(term => searchableText.includes(term));
-    });
+    if (filters.albums.length > 0) {
+      filtered = filtered.filter(photo =>
+        filters.albums.includes(photo.albumKey)
+      );
+    }
 
-    setResults(matches.slice(0, 50)); // Limit to 50 results
-    setLoading(false);
+    // Then apply fuzzy search if query exists
+    if (searchQuery.trim()) {
+      const fuseInstance = new Fuse(filtered, {
+        keys: [
+          { name: 'title', weight: 0.4 },
+          { name: 'caption', weight: 0.3 },
+          { name: 'keywords', weight: 0.2 },
+          { name: 'albumName', weight: 0.1 },
+        ],
+        threshold: 0.4,
+        includeScore: true,
+        minMatchCharLength: 2,
+      });
+
+      const searchResults = fuseInstance.search(searchQuery);
+      setResults(searchResults.map(result => result.item).slice(0, 50));
+    } else {
+      setResults(filtered.slice(0, 50));
+    }
   };
 
+  // Update search when query or filters change
+  useEffect(() => {
+    handleSearch(query);
+  }, [query, filters, allPhotos]);
+
+  const toggleFilter = (type: keyof FilterState, value: string) => {
+    setFilters(prev => {
+      const current = prev[type] as string[];
+      const updated = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+
+      return { ...prev, [type]: updated };
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({ sports: [], albums: [], dateRange: 'all' });
+    setQuery('');
+  };
+
+  const hasActiveFilters = filters.sports.length > 0 || filters.albums.length > 0 || query.trim();
+
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+    <main className="min-h-screen bg-zinc-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Header */}
         <div className="mb-8">
           <a
             href="/"
-            className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+            className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6 transition-colors"
           >
-            ← Back to Albums
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Albums
           </a>
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3">
             Search Photos
           </h1>
+          <p className="text-lg text-zinc-400 max-w-3xl">
+            Search across {allPhotos.length} albums with AI-enriched metadata
+          </p>
+        </div>
 
-          {/* Search Input */}
-          <div className="max-w-2xl">
+        {/* Search Input */}
+        <div className="mb-8">
+          <div className="relative">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             <input
               type="text"
               value={query}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search by keywords (e.g., 'volleyball spike dramatic')"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by title, description, or keywords..."
+              className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <p className="mt-2 text-sm text-gray-600">
-              Searching across {allPhotos.length.toLocaleString()} enriched photos
-            </p>
           </div>
+
+          {/* Search Stats */}
+          <p className="mt-3 text-sm text-zinc-500">
+            {loading ? (
+              'Loading...'
+            ) : hasActiveFilters ? (
+              <>Found {results.length} result{results.length !== 1 ? 's' : ''}</>
+            ) : (
+              'Enter a search term or apply filters'
+            )}
+          </p>
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Searching...</p>
-          </div>
-        )}
+        {/* Filters */}
+        <div className="mb-8 space-y-6">
+          {/* Sports Filter */}
+          {availableSports.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-3">Sports</h3>
+              <div className="flex flex-wrap gap-2">
+                {availableSports.slice(0, 10).map((sport) => (
+                  <button
+                    key={sport}
+                    onClick={() => toggleFilter('sports', sport)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      filters.sports.includes(sport)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
+                    }`}
+                  >
+                    {sport}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Albums Filter */}
+          {availableAlbums.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-3">Albums</h3>
+              <div className="flex flex-wrap gap-2">
+                {availableAlbums.slice(0, 8).map((album) => (
+                  <button
+                    key={album.key}
+                    onClick={() => toggleFilter('albums', album.key)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      filters.albums.includes(album.key)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
+                    }`}
+                  >
+                    {album.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
 
         {/* Results */}
-        {!loading && query && results.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">No photos found matching "{query}"</p>
+        {!loading && results.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {results.map((photo) => (
+              <a
+                key={photo.imageKey}
+                href={`/album/${photo.albumKey}`}
+                className="group block bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
+              >
+                <div className="aspect-square bg-zinc-800 relative overflow-hidden">
+                  {photo.thumbnailUrl ? (
+                    <Image
+                      src={photo.thumbnailUrl}
+                      alt={photo.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="w-16 h-16 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-white text-sm line-clamp-2 mb-1">
+                    {photo.title}
+                  </h3>
+                  <p className="text-xs text-zinc-500 mb-2">{photo.albumName}</p>
+                  {photo.keywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {photo.keywords.slice(0, 2).map((keyword, i) => (
+                        <span
+                          key={i}
+                          className="text-xs px-2 py-1 bg-zinc-800 text-zinc-400 rounded"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                      {photo.keywords.length > 2 && (
+                        <span className="text-xs px-2 py-1 bg-zinc-800 text-zinc-500 rounded">
+                          +{photo.keywords.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </a>
+            ))}
           </div>
         )}
 
-        {!loading && results.length > 0 && (
-          <>
-            <div className="mb-4">
-              <p className="text-gray-700">
-                Found {results.length} photo{results.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {results.map((photo) => (
-                <div
-                  key={photo.imageKey}
-                  className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden"
-                >
-                  <a href={`/album/${photo.albumKey}`}>
-                    <div className="relative aspect-square">
-                      <Image
-                        src={photo.thumbnailUrl}
-                        alt={photo.title || photo.fileName}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
-                        {photo.title}
-                      </h3>
-                      <p className="text-xs text-gray-500 mb-2">
-                        {photo.albumName}
-                      </p>
-                      {photo.caption && (
-                        <p className="text-xs text-gray-600 line-clamp-2">
-                          {photo.caption}
-                        </p>
-                      )}
-                    </div>
-                  </a>
-                </div>
-              ))}
-            </div>
-          </>
+        {/* No Results */}
+        {!loading && hasActiveFilters && results.length === 0 && (
+          <div className="text-center py-24">
+            <svg
+              className="w-24 h-24 text-zinc-700 mx-auto mb-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <h3 className="text-xl font-semibold text-white mb-2">No Results Found</h3>
+            <p className="text-zinc-500 mb-4">
+              Try adjusting your search or filters
+            </p>
+            <button
+              onClick={clearFilters}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+            >
+              Clear Filters
+            </button>
+          </div>
         )}
 
         {/* Example Queries */}
-        {!query && (
-          <div className="mt-12 bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        {!hasActiveFilters && (
+          <div className="bg-zinc-900 rounded-xl p-8">
+            <h2 className="text-xl font-semibold text-white mb-6">
               Try These Searches
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {[
-                'volleyball spike',
-                'dramatic sunset',
-                'celebration moment',
-                'intense focus',
-                'beach volleyball',
-                'indoor court action',
+                'volleyball',
+                'spike',
+                'championship',
+                'action',
+                'celebration',
+                'indoor',
               ].map((example) => (
                 <button
                   key={example}
-                  onClick={() => handleSearch(example)}
-                  className="text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition-colors"
+                  onClick={() => setQuery(example)}
+                  className="text-left px-6 py-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm text-zinc-300 transition-colors"
                 >
                   {example}
                 </button>

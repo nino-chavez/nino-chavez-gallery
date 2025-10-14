@@ -1,18 +1,38 @@
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import { resolve } from 'path';
+import { fetchGalleryData } from '@/lib/smugmug/client';
 
+/**
+ * GET /api/gallery
+ *
+ * Fetches complete gallery data from SmugMug (lazy loading)
+ * Albums are loaded with metadata, images loaded on-demand
+ */
 export async function GET() {
   try {
-    const contextPath = resolve(process.cwd(), 'gallery-context.json');
-    const data = await readFile(contextPath, 'utf-8');
-    const context = JSON.parse(data);
+    const galleryData = await fetchGalleryData();
 
-    return NextResponse.json(context);
+    return NextResponse.json({
+      success: true,
+      username: process.env.SMUGMUG_USERNAME || 'ninochavez',
+      generatedAt: new Date().toISOString(),
+      totalAlbums: galleryData.albums.length,
+      totalPhotos: galleryData.totalImages,
+      albums: galleryData.albums.map(album => ({
+        albumKey: album.AlbumKey,
+        name: album.Title,
+        description: album.Description,
+        photoCount: album.TotalImageCount,
+        keywords: album.Keywords,
+      })),
+    });
   } catch (error) {
-    console.error('Error reading gallery context:', error);
+    console.error('[API] Error loading gallery:', error);
     return NextResponse.json(
-      { error: 'Failed to load gallery context' },
+      {
+        success: false,
+        error: 'Failed to load gallery context',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

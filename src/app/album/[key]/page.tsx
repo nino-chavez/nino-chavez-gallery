@@ -1,42 +1,33 @@
-import { readFile } from 'fs/promises';
-import { resolve } from 'path';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import { fetchAlbums, fetchAlbumImages } from '@/lib/smugmug/client';
+import type { SmugMugAlbum, SmugMugImage } from '@/types/smugmug';
 
-interface Photo {
-  imageKey: string;
-  fileName: string;
-  title: string;
-  caption: string;
-  keywords: string[];
-  uploadDate: string;
-  imageUrl: string;
-  thumbnailUrl: string;
-  width: number;
-  height: number;
+interface AlbumWithImages extends SmugMugAlbum {
+  Images: SmugMugImage[];
 }
 
-interface Album {
-  albumKey: string;
-  name: string;
-  description: string;
-  urlName: string;
-  photoCount: number;
-  createdDate: string;
-  lastUpdated: string;
-  photos: Photo[];
-}
+async function getAlbum(albumKey: string): Promise<AlbumWithImages | null> {
+  try {
+    // Fetch album list to get metadata
+    const albums = await fetchAlbums();
+    const album = albums.find(a => a.AlbumKey === albumKey);
 
-interface GalleryContext {
-  albums: Album[];
-}
+    if (!album) {
+      return null;
+    }
 
-async function getAlbum(albumKey: string): Promise<Album | null> {
-  const contextPath = resolve(process.cwd(), 'gallery-context.json');
-  const data = await readFile(contextPath, 'utf-8');
-  const context: GalleryContext = JSON.parse(data);
+    // Fetch images for this album
+    const images = await fetchAlbumImages(albumKey);
 
-  return context.albums.find(a => a.albumKey === albumKey) || null;
+    return {
+      ...album,
+      Images: images,
+    };
+  } catch (error) {
+    console.error(`Failed to fetch album ${albumKey}:`, error);
+    return null;
+  }
 }
 
 export default async function AlbumPage({
@@ -52,67 +43,79 @@ export default async function AlbumPage({
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+    <main className="min-h-screen bg-zinc-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8">
           <a
             href="/"
-            className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+            className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6 transition-colors"
           >
-            ← Back to Albums
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Albums
           </a>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {album.name}
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3">
+            {album.Title}
           </h1>
-          {album.description && (
-            <p className="text-lg text-gray-600 mb-4">{album.description}</p>
+          {album.Description && (
+            <p className="text-lg text-zinc-400 mb-6 max-w-3xl">{album.Description}</p>
           )}
-          <div className="flex gap-4 text-sm text-gray-500">
-            <span>{album.photoCount} photos</span>
-            <span>Updated {new Date(album.lastUpdated).toLocaleDateString()}</span>
+          <div className="flex items-center gap-6 text-sm">
+            <span className="text-zinc-400">
+              <span className="text-white font-semibold">{album.Images.length}</span> {album.Images.length === 1 ? 'photo' : 'photos'}
+            </span>
+            {album.Keywords && (
+              <>
+                <span className="text-zinc-700">•</span>
+                <span className="text-zinc-500">{album.Keywords.split(';').slice(0, 3).map(k => k.trim()).join(', ')}</span>
+              </>
+            )}
           </div>
         </div>
 
         {/* Photo Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {album.photos.map((photo) => (
+          {album.Images.map((photo) => (
             <div
-              key={photo.imageKey}
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden group"
+              key={photo.ImageKey}
+              className="group bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
             >
-              <div className="relative aspect-square">
+              <div className="relative aspect-square bg-zinc-800">
                 <Image
-                  src={photo.thumbnailUrl}
-                  alt={photo.title || photo.fileName}
+                  src={photo.ThumbnailUrl}
+                  alt={photo.Title || photo.FileName}
                   fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                 />
               </div>
-              {photo.title && (
+              {(photo.Title || photo.Caption || photo.Keywords) && (
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
-                    {photo.title}
-                  </h3>
-                  {photo.caption && (
-                    <p className="text-xs text-gray-600 line-clamp-2">
-                      {photo.caption}
+                  {photo.Title && (
+                    <h3 className="font-semibold text-white text-sm line-clamp-2 mb-1">
+                      {photo.Title}
+                    </h3>
+                  )}
+                  {photo.Caption && (
+                    <p className="text-xs text-zinc-500 line-clamp-2 mb-2">
+                      {photo.Caption}
                     </p>
                   )}
-                  {photo.keywords.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {photo.keywords.slice(0, 3).map((keyword, i) => (
+                  {photo.Keywords && (
+                    <div className="flex flex-wrap gap-1">
+                      {photo.Keywords.split(';').slice(0, 2).map((keyword, i) => (
                         <span
                           key={i}
-                          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded"
+                          className="text-xs px-2 py-1 bg-zinc-800 text-zinc-400 rounded"
                         >
-                          {keyword}
+                          {keyword.trim()}
                         </span>
                       ))}
-                      {photo.keywords.length > 3 && (
-                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded">
-                          +{photo.keywords.length - 3}
+                      {photo.Keywords.split(';').length > 2 && (
+                        <span className="text-xs px-2 py-1 bg-zinc-800 text-zinc-500 rounded">
+                          +{photo.Keywords.split(';').length - 2}
                         </span>
                       )}
                     </div>
@@ -128,11 +131,14 @@ export default async function AlbumPage({
 }
 
 export async function generateStaticParams() {
-  const contextPath = resolve(process.cwd(), 'gallery-context.json');
-  const data = await readFile(contextPath, 'utf-8');
-  const context: GalleryContext = JSON.parse(data);
+  try {
+    const albums = await fetchAlbums();
 
-  return context.albums.map((album) => ({
-    key: album.albumKey,
-  }));
+    return albums.map((album) => ({
+      key: album.AlbumKey,
+    }));
+  } catch (error) {
+    console.error('Failed to generate static params:', error);
+    return [];
+  }
 }
