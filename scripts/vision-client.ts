@@ -5,6 +5,11 @@
  * Auto-detects provider based on available API keys
  */
 
+// Load environment variables
+import { config } from 'dotenv';
+import { resolve } from 'path';
+config({ path: resolve(process.cwd(), '.env.local') });
+
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 
@@ -56,11 +61,26 @@ function detectProvider(): 'claude' | 'openai' | 'gemini' {
  * Build prompt for vision analysis
  */
 function buildPrompt(context: VisionContext): string {
+  // Detect venue type from event name for better sport identification
+  const eventNameLower = (context.eventName || context.albumName || '').toLowerCase();
+  const isIndoorTurf = eventNameLower.includes('turf');
+  const isGrass = eventNameLower.includes('grass');
+  const isBeach = eventNameLower.includes('beach') || eventNameLower.includes('sand');
+
+  let venueHint = '';
+  if (isIndoorTurf) {
+    venueHint = '\n⚠️ IMPORTANT: This is INDOOR TURF. The yellow ball and artificial surface may look like soccer, but this is VOLLEYBALL played on indoor turf.';
+  } else if (isGrass) {
+    venueHint = '\n- Venue: Grass/outdoor';
+  } else if (isBeach) {
+    venueHint = '\n- Venue: Beach/sand';
+  }
+
   return `Analyze this ${context.sport} photo from "${context.eventName || context.albumName}".
 
 Context:
 - Sport: ${context.sport}
-- Event: ${context.eventName || context.albumName || 'Unknown'}
+- Event: ${context.eventName || context.albumName || 'Unknown'}${venueHint}
 ${context.location ? `- Location: ${context.location}` : ''}
 ${context.date ? `- Date: ${context.date.toLocaleDateString()}` : ''}
 ${context.cameraInfo ? `- Camera: ${context.cameraInfo}` : ''}
@@ -119,15 +139,49 @@ async function analyzeWithClaude(
     // External URL - fetch and convert
     const response = await fetch(imageUrl);
     const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
+
+    // Check size and compress if needed (Claude has 5MB limit)
+    let finalBuffer = buffer;
+    const sizeInMB = buffer.byteLength / 1024 / 1024;
+
+    if (sizeInMB > 4.5) {
+      // Image is too large - try appending SmugMug size parameter
+      // SmugMug supports URL parameters like ?size=M for medium
+      console.log(`    📏 Image is ${sizeInMB.toFixed(1)}MB, requesting smaller size...`);
+
+      const smallerUrl = imageUrl.includes('?') ? `${imageUrl}&size=M` : `${imageUrl}?size=M`;
+      try {
+        const smallerResponse = await fetch(smallerUrl);
+        finalBuffer = await smallerResponse.arrayBuffer();
+        const newSize = finalBuffer.byteLength / 1024 / 1024;
+        console.log(`    ✅ Reduced to ${newSize.toFixed(1)}MB`);
+      } catch (err) {
+        console.log(`    ⚠️  Could not fetch smaller size, will use original`);
+        finalBuffer = buffer;
+      }
+    }
+
+    const base64 = Buffer.from(finalBuffer).toString('base64');
 
     // Detect media type from URL or response
     const contentType = response.headers.get('content-type') || 'image/jpeg';
-    const mediaType = contentType.split('/')[1] as Anthropic.ImageBlockParam['source']['media_type'];
+
+    // Parse and normalize to full format (image/jpeg, etc.)
+    let fullMediaType = contentType.startsWith('image/') ? contentType : `image/${contentType}`;
+
+    // Normalize variants
+    if (fullMediaType === 'image/jpg') fullMediaType = 'image/jpeg';
+
+    // Validate and fallback
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(fullMediaType)) {
+      console.log(`    ⚠️  Unknown content-type: ${contentType}, defaulting to image/jpeg`);
+      fullMediaType = 'image/jpeg';
+    }
 
     imageSource = {
       type: 'base64',
-      media_type: mediaType || 'jpeg',
+      media_type: fullMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
       data: base64,
     };
   } else {
@@ -135,7 +189,7 @@ async function analyzeWithClaude(
   }
 
   const message = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-sonnet-4-20250514', // Latest Claude Sonnet 4 (best quality)
     max_tokens: 1024,
     messages: [{
       role: 'user',
