@@ -48,6 +48,10 @@ export interface SmugMugAlbum {
   ImagesUri: string;
   Images: SmugMugImage[];
   TotalImageCount: number;
+  // Privacy settings
+  Privacy?: 'Public' | 'Unlisted' | 'Private';
+  WorldSearchable?: boolean;
+  SmugSearchable?: string;
 }
 
 export interface SmugMugGalleryData {

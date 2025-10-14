@@ -62,6 +62,10 @@ interface Album {
   createdDate: string;
   lastUpdated: string;
   photos: Photo[];
+  // Privacy settings
+  privacy: 'Public' | 'Unlisted' | 'Private';
+  worldSearchable: boolean;
+  smugSearchable: string;
 }
 
 interface GalleryContext {
@@ -108,6 +112,7 @@ async function getAuthUser() {
 
 /**
  * Get all albums with pagination
+ * Only fetch Public and Unlisted albums (exclude Private)
  */
 async function getAlbums() {
   console.log('📂 Fetching albums...');
@@ -137,8 +142,10 @@ async function getAlbums() {
     start += count;
   }
 
-  console.log(`   ✅ Successfully fetched ${allAlbums.length} total albums\n`);
-  return allAlbums;
+  // Filter out Private albums (only keep Public and Unlisted)
+  const publicAlbums = allAlbums.filter(album => album.Privacy !== 'Private');
+  console.log(`   ✅ Successfully fetched ${allAlbums.length} total albums (${publicAlbums.length} public/unlisted, ${allAlbums.length - publicAlbums.length} private filtered)\n`);
+  return publicAlbums;
 }
 
 /**
@@ -213,6 +220,10 @@ async function processAlbum(album: any): Promise<Album> {
     createdDate: album.DateAdded,
     lastUpdated: album.LastUpdated,
     photos,
+    // Privacy settings
+    privacy: album.Privacy || 'Public',
+    worldSearchable: album.WorldSearchable || false,
+    smugSearchable: album.SmugSearchable || 'No',
   };
 }
 
