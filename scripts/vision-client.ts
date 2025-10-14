@@ -26,6 +26,22 @@ interface VisionAnalysisResult {
   emotion: string;
   composition: string;
   timeOfDay: string;
+  // Phase 3: Quality scoring
+  quality: {
+    sharpness: number;           // 0-10: Focus accuracy
+    exposureAccuracy: number;    // 0-10: Lighting correctness
+    compositionScore: number;    // 0-10: Framing and rule-following
+    emotionalImpact: number;     // 0-10: Action intensity, expression
+  };
+  // Phase 3: Portfolio flags
+  portfolioWorthy: boolean;      // Top-tier shot
+  printReady: boolean;           // High quality for print
+  // Phase 3: Use case tags
+  useCases: string[];            // ['social-media', 'website-hero', 'athlete-portfolio', 'print']
+  socialMediaOptimized: boolean; // Strong impact, crop-friendly
+  // Phase 3: Play classification (modern volleyball terminology)
+  playType: 'attack' | 'block' | 'dig' | 'set' | 'serve' | 'pass' | 'celebration' | 'timeout' | null;
+  actionIntensity: 'low' | 'medium' | 'high' | 'peak';  // Peak = game-winning moments
   provider: 'claude' | 'openai' | 'gemini';
   cost: number;
 }
@@ -99,7 +115,21 @@ Generate rich metadata in this exact JSON format:
   },
   "emotion": "triumph|focus|intensity|playfulness|determination|excitement|serenity",
   "composition": "rule-of-thirds|leading-lines|symmetry|motion-blur|close-up|wide-angle|dramatic-angle",
-  "timeOfDay": "morning|afternoon|golden-hour|evening|night|midday"
+  "timeOfDay": "morning|afternoon|golden-hour|evening|night|midday",
+
+  "quality": {
+    "sharpness": 0-10 (subject focus accuracy),
+    "exposureAccuracy": 0-10 (lighting correctness),
+    "compositionScore": 0-10 (framing, rule-following),
+    "emotionalImpact": 0-10 (action intensity, expression)
+  },
+  "portfolioWorthy": true|false (exceptional quality, top-tier shot),
+  "printReady": true|false (high resolution + quality for print),
+  "useCases": ["social-media", "website-hero", "athlete-portfolio", "print", "editorial"] (select all that apply),
+  "socialMediaOptimized": true|false (strong impact, vertical-crop friendly),
+
+  "playType": "attack|block|dig|set|serve|pass|celebration|timeout|null" (use modern volleyball terminology),
+  "actionIntensity": "low|medium|high|peak" (peak = game-winning moments)
 }
 
 Requirements:
@@ -108,7 +138,12 @@ Requirements:
 - Keep best existing keywords, add new ones
 - tier3 MUST use colon format (key:value)
 - Be specific to what you actually see in the image
-- Focus on photography composition and technical excellence`;
+- Focus on photography composition and technical excellence
+- Quality scores: Be objective about sharpness, exposure, composition
+- Use modern volleyball terms: "attack" not "spike", "pass" for serve-receive
+- actionIntensity: "peak" for game-deciding moments with visible emotion
+- useCases: Consider image aspect ratio, subject positioning, visual impact
+- portfolioWorthy: Reserve for 9+ scores across quality metrics`;
 }
 
 /**

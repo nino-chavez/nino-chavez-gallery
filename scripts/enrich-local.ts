@@ -61,6 +61,22 @@ interface LocationMetadata {
   timezone: string;
 }
 
+interface QualityMetadata {
+  sharpness: number;
+  exposureAccuracy: number;
+  compositionScore: number;
+  emotionalImpact: number;
+  portfolioWorthy: boolean;
+  printReady: boolean;
+  useCases: string[];
+  socialMediaOptimized: boolean;
+}
+
+interface PlayMetadata {
+  playType: 'attack' | 'block' | 'dig' | 'set' | 'serve' | 'pass' | 'celebration' | 'timeout' | null;
+  actionIntensity: 'low' | 'medium' | 'high' | 'peak';
+}
+
 interface EnrichedMetadata {
   title: string;
   caption: string;
@@ -74,7 +90,9 @@ interface EnrichedMetadata {
   timeOfDay: string;
   technical: TechnicalMetadata;
   event: EventMetadata;
-  location?: LocationMetadata;
+  location?: LocationMetadata;  // Phase 2
+  quality?: QualityMetadata;    // Phase 3
+  play?: PlayMetadata;          // Phase 3
 }
 
 /**
@@ -299,6 +317,20 @@ async function analyzePhoto(photoPath: string, context: ReturnType<typeof extrac
   console.log(`    ✅ Title: ${result.title}`);
   console.log(`    📝 Keywords: ${Object.values(result.keywords).flat().length} tags + ${technical.shootingStyles.length} shooting styles`);
 
+  // Phase 3: Log quality and play classification
+  if (result.quality) {
+    const avgScore = (
+      result.quality.sharpness +
+      result.quality.exposureAccuracy +
+      result.quality.compositionScore +
+      result.quality.emotionalImpact
+    ) / 4;
+    console.log(`    ⭐ Quality: ${avgScore.toFixed(1)}/10 (${result.portfolioWorthy ? 'portfolio-worthy' : 'standard'})`);
+  }
+  if (result.playType) {
+    console.log(`    🏐 Play: ${result.playType} (${result.actionIntensity} intensity)`);
+  }
+
   // Convert vision result to enriched metadata format
   return {
     title: result.title,
@@ -310,6 +342,20 @@ async function analyzePhoto(photoPath: string, context: ReturnType<typeof extrac
     technical,
     event,
     location, // Phase 2: GPS coordinates and location data
+    quality: result.quality ? {
+      sharpness: result.quality.sharpness,
+      exposureAccuracy: result.quality.exposureAccuracy,
+      compositionScore: result.quality.compositionScore,
+      emotionalImpact: result.quality.emotionalImpact,
+      portfolioWorthy: result.portfolioWorthy,
+      printReady: result.printReady,
+      useCases: result.useCases,
+      socialMediaOptimized: result.socialMediaOptimized,
+    } : undefined,
+    play: result.playType ? {
+      playType: result.playType,
+      actionIntensity: result.actionIntensity,
+    } : undefined,
   };
 }
 
@@ -317,7 +363,7 @@ async function analyzePhoto(photoPath: string, context: ReturnType<typeof extrac
  * Write metadata to EXIF
  */
 function writeMetadataToExif(photoPath: string, metadata: EnrichedMetadata, dryRun = false): void {
-  // Combine AI keywords + Phase 1 technical & event keywords + Phase 2 location keywords
+  // Combine AI keywords + Phase 1 technical & event keywords + Phase 2 location + Phase 3 quality/play
   // NOTE: Use underscores instead of colons/hyphens to avoid SmugMug concatenation
   const allKeywords = [
     ...metadata.keywords.tier1.map(k => k.replace(/-/g, '_')),
@@ -340,6 +386,19 @@ function writeMetadataToExif(photoPath: string, metadata: EnrichedMetadata, dryR
       `city_${metadata.location.city.toLowerCase().replace(/[\s-]+/g, '_')}`,
       `state_${metadata.location.state.toLowerCase().replace(/[\s-]+/g, '_')}`,
       `country_${metadata.location.country.toLowerCase().replace(/[\s-]+/g, '_')}`,
+    ] : []),
+    // Phase 3: Quality metadata keywords
+    ...(metadata.quality ? [
+      `quality_${Math.round((metadata.quality.sharpness + metadata.quality.exposureAccuracy + metadata.quality.compositionScore + metadata.quality.emotionalImpact) / 4 * 10) / 10}`,
+      ...(metadata.quality.portfolioWorthy ? ['portfolio_worthy'] : []),
+      ...(metadata.quality.printReady ? ['print_ready'] : []),
+      ...(metadata.quality.socialMediaOptimized ? ['social_media_optimized'] : []),
+      ...metadata.quality.useCases.map(uc => `use_case_${uc.replace(/-/g, '_')}`),
+    ] : []),
+    // Phase 3: Play classification keywords (modern volleyball terminology)
+    ...(metadata.play ? [
+      ...(metadata.play.playType ? [`play_${metadata.play.playType}`] : []),
+      `intensity_${metadata.play.actionIntensity}`,
     ] : []),
   ];
 
