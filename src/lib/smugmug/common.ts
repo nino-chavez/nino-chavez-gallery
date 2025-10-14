@@ -130,7 +130,7 @@ export function createSmugMugClient(config: SmugMugClientConfig) {
   }
 
   /**
-   * Fetch all albums for the configured user
+   * Fetch all albums for the configured user with pagination
    */
   async function fetchAlbums(options?: RequestOptions): Promise<SmugMugAlbum[]> {
     const cacheKey = `albums:${config.username}`;
@@ -142,19 +142,41 @@ export function createSmugMugClient(config: SmugMugClientConfig) {
       return cached;
     }
 
-    console.log(`[SmugMug] Fetching albums for user: ${config.username}`);
+    console.log(`[SmugMug] Fetching all albums for user: ${config.username}`);
 
     // Deduplicate requests
     return deduplicatedRequest(cacheKey, async () => {
-      const response = await config.requestFn<AlbumsResponse>(
-        `/user/${config.username}!albums`,
-        options
-      );
+      let allAlbums: any[] = [];
+      let start = 1;
+      const count = 100; // Max per page
 
-      const albums = response.Album.map(parseAlbum);
+      // Pagination loop - fetch all pages
+      while (true) {
+        console.log(`[SmugMug] Fetching albums page (start=${start}, count=${count})`);
+
+        const response = await config.requestFn<AlbumsResponse>(
+          `/user/${config.username}!albums?count=${count}&start=${start}`,
+          options
+        );
+
+        const pageAlbums = response.Album || [];
+        allAlbums.push(...pageAlbums);
+
+        console.log(`[SmugMug] Fetched ${pageAlbums.length} albums (total so far: ${allAlbums.length})`);
+
+        // Check if we've fetched all albums
+        // SmugMug returns fewer than requested when on last page
+        if (pageAlbums.length < count || !response.Pages?.NextPage) {
+          break;
+        }
+
+        start += count;
+      }
+
+      const albums = allAlbums.map(parseAlbum);
       cache.set(cacheKey, albums, CACHE_TTL.albums);
 
-      console.log(`[SmugMug] Loaded ${albums.length} albums`);
+      console.log(`[SmugMug] Successfully loaded ${albums.length} total albums`);
       return albums;
     });
   }
