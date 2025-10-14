@@ -12,6 +12,7 @@ config({ path: resolve(process.cwd(), '.env.local') });
 
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const VISION_PROVIDER = process.env.VISION_PROVIDER || 'auto';
 
@@ -76,7 +77,7 @@ function detectProvider(): 'claude' | 'openai' | 'gemini' {
 /**
  * Build prompt for vision analysis
  */
-function buildPrompt(context: VisionContext): string {
+function buildPrompt(context: VisionContext, includePhase3 = true): string {
   // Detect venue type from event name for better sport identification
   const eventNameLower = (context.eventName || context.albumName || '').toLowerCase();
   const isIndoorTurf = eventNameLower.includes('turf');
@@ -92,7 +93,7 @@ function buildPrompt(context: VisionContext): string {
     venueHint = '\n- Venue: Beach/sand';
   }
 
-  return `Analyze this ${context.sport} photo from "${context.eventName || context.albumName}".
+  const basePrompt = `Analyze this ${context.sport} photo from "${context.eventName || context.albumName}".
 
 Context:
 - Sport: ${context.sport}
@@ -115,7 +116,7 @@ Generate rich metadata in this exact JSON format:
   },
   "emotion": "triumph|focus|intensity|playfulness|determination|excitement|serenity",
   "composition": "rule-of-thirds|leading-lines|symmetry|motion-blur|close-up|wide-angle|dramatic-angle",
-  "timeOfDay": "morning|afternoon|golden-hour|evening|night|midday",
+  "timeOfDay": "morning|afternoon|golden-hour|evening|night|midday"${includePhase3 ? `,
 
   "quality": {
     "sharpness": 0-10 (subject focus accuracy),
@@ -129,7 +130,7 @@ Generate rich metadata in this exact JSON format:
   "socialMediaOptimized": true|false (strong impact, vertical-crop friendly),
 
   "playType": "attack|block|dig|set|serve|pass|celebration|timeout|null" (use modern volleyball terminology),
-  "actionIntensity": "low|medium|high|peak" (peak = game-winning moments)
+  "actionIntensity": "low|medium|high|peak" (peak = game-winning moments)` : ''}
 }
 
 Requirements:
@@ -138,12 +139,14 @@ Requirements:
 - Keep best existing keywords, add new ones
 - tier3 MUST use colon format (key:value)
 - Be specific to what you actually see in the image
-- Focus on photography composition and technical excellence
+- Focus on photography composition and technical excellence${includePhase3 ? `
 - Quality scores: Be objective about sharpness, exposure, composition
 - Use modern volleyball terms: "attack" not "spike", "pass" for serve-receive
 - actionIntensity: "peak" for game-deciding moments with visible emotion
 - useCases: Consider image aspect ratio, subject positioning, visual impact
-- portfolioWorthy: Reserve for 9+ scores across quality metrics`;
+- portfolioWorthy: Reserve for 9+ scores across quality metrics` : ''}`;
+
+  return basePrompt;
 }
 
 /**
@@ -318,14 +321,82 @@ async function analyzeWithOpenAI(
 }
 
 /**
- * Analyze with Gemini (OPTIONAL)
+ * Analyze with Gemini Flash (COST-OPTIMIZED)
  */
 async function analyzeWithGemini(
   imageUrl: string,
   context: VisionContext
 ): Promise<VisionAnalysisResult> {
-  // Gemini implementation (if needed)
-  throw new Error('Gemini provider not yet implemented. Use Claude or OpenAI.');
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+  const prompt = buildPrompt(context, false); // No Phase 3 for Gemini
+
+  // Gemini expects base64 image data
+  let imageData: {inlineData: {data: string; mimeType: string}};
+
+  if (imageUrl.startsWith('data:image')) {
+    // Already base64
+    const match = imageUrl.match(/^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/);
+    if (!match) throw new Error('Invalid base64 image format');
+
+    const mimeType = match[1] === 'jpg' ? 'jpeg' : match[1];
+    imageData = {
+      inlineData: {
+        data: match[2],
+        mimeType: `image/${mimeType}`
+      }
+    };
+  } else if (imageUrl.startsWith('http')) {
+    // External URL - fetch and convert
+    const response = await fetch(imageUrl);
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const mimeType = contentType.startsWith('image/') ? contentType : `image/${contentType}`;
+
+    imageData = {
+      inlineData: {
+        data: base64,
+        mimeType: mimeType as any
+      }
+    };
+  } else {
+    throw new Error('Image must be URL or base64 data URI');
+  }
+
+  const result = await model.generateContent([prompt, imageData]);
+  const responseText = result.response.text();
+
+  // Extract JSON from response
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error(`Could not extract JSON from Gemini response: ${responseText}`);
+  }
+
+  const metadata = JSON.parse(jsonMatch[0]);
+
+  // Calculate cost (Gemini Flash pricing)
+  const inputTokens = result.response.usageMetadata?.promptTokenCount || 0;
+  const outputTokens = result.response.usageMetadata?.candidatesTokenCount || 0;
+  const inputCost = (inputTokens / 1_000_000) * 0.075; // $0.075 per 1M input tokens
+  const outputCost = (outputTokens / 1_000_000) * 0.30; // $0.30 per 1M output tokens
+  const cost = inputCost + outputCost;
+
+  // Add default Phase 3 values (null/undefined for Gemini)
+  return {
+    ...metadata,
+    quality: undefined,
+    portfolioWorthy: false,
+    printReady: false,
+    useCases: [],
+    socialMediaOptimized: false,
+    playType: null,
+    actionIntensity: 'medium' as const,
+    provider: 'gemini',
+    cost,
+  };
 }
 
 /**
@@ -370,9 +441,9 @@ export function estimateCost(photoCount: number, provider?: 'claude' | 'openai' 
   const activeProvider = provider || detectProvider();
 
   const costs = {
-    claude: 0.0036,  // ~$3.60 per 1,000 photos
-    openai: 0.01,    // ~$10 per 1,000 photos
-    gemini: 0.001,   // ~$1 per 1,000 photos
+    claude: 0.0036,  // ~$3.60 per 1,000 photos (Sonnet 4)
+    openai: 0.01,    // ~$10 per 1,000 photos (GPT-4o)
+    gemini: 0.001,   // ~$1 per 1,000 photos (Gemini Flash)
   };
 
   return photoCount * costs[activeProvider];
@@ -385,9 +456,9 @@ export function getProviderName(): string {
   const provider = detectProvider();
 
   const names = {
-    claude: 'Claude 3.5 Sonnet (Anthropic)',
+    claude: 'Claude Sonnet 4 (Anthropic)',
     openai: 'GPT-4o (OpenAI)',
-    gemini: 'Gemini 1.5 Pro (Google)',
+    gemini: 'Gemini 1.5 Flash (Google)',
   };
 
   return names[provider];
