@@ -15,6 +15,7 @@ import { readdir, readFile, stat } from 'fs/promises';
 import { join, basename, dirname } from 'path';
 import { execSync } from 'child_process';
 import { analyzePhoto as analyzePhotoWithVision } from './vision-client.js';
+import { geocodeVenue, extractVenueName, getCachedLocationCount } from './geocoding-service.js';
 
 // Load environment variables from .env.local
 config({ path: '.env.local' });
@@ -48,6 +49,18 @@ interface EventMetadata {
   timestamp?: Date;
 }
 
+interface LocationMetadata {
+  venue: string;
+  city: string;
+  state: string;
+  country: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  timezone: string;
+}
+
 interface EnrichedMetadata {
   title: string;
   caption: string;
@@ -61,6 +74,7 @@ interface EnrichedMetadata {
   timeOfDay: string;
   technical: TechnicalMetadata;
   event: EventMetadata;
+  location?: LocationMetadata;
 }
 
 /**
@@ -240,7 +254,7 @@ function readExistingEXIF(photoPath: string): any {
 }
 
 /**
- * Analyze photo with unified vision client (Claude/OpenAI/Gemini) + Phase 1 metadata
+ * Analyze photo with unified vision client (Claude/OpenAI/Gemini) + Phase 1 & 2 metadata
  */
 async function analyzePhoto(photoPath: string, context: ReturnType<typeof extractContext>): Promise<EnrichedMetadata> {
   console.log(`  🔍 Analyzing: ${basename(photoPath)}`);
@@ -253,6 +267,17 @@ async function analyzePhoto(photoPath: string, context: ReturnType<typeof extrac
 
   console.log(`    📷 ${technical.camera} | ${technical.shutterSpeed} f/${technical.aperture} ISO${technical.iso}`);
   console.log(`    🏟️  ${event.venue} - ${event.sport}${event.gender ? ` (${event.gender})` : ''} | ${event.season} ${event.year}`);
+
+  // Phase 2: Location enrichment (geocoding)
+  let location: LocationMetadata | undefined;
+  const venueName = extractVenueName(photoPath);
+  if (venueName) {
+    const geocoded = await geocodeVenue(venueName);
+    if (geocoded) {
+      location = geocoded;
+      console.log(`    📍 ${location.city}, ${location.state} (${location.coordinates.lat.toFixed(4)}, ${location.coordinates.lng.toFixed(4)})`);
+    }
+  }
 
   // Convert local file to data URL for vision client
   const imageBuffer = await readFile(photoPath);
@@ -284,6 +309,7 @@ async function analyzePhoto(photoPath: string, context: ReturnType<typeof extrac
     timeOfDay: result.keywords.tier3.find((k: string) => k.startsWith('time:'))?.replace('time:', '') || '',
     technical,
     event,
+    location, // Phase 2: GPS coordinates and location data
   };
 }
 
@@ -291,7 +317,7 @@ async function analyzePhoto(photoPath: string, context: ReturnType<typeof extrac
  * Write metadata to EXIF
  */
 function writeMetadataToExif(photoPath: string, metadata: EnrichedMetadata, dryRun = false): void {
-  // Combine AI keywords + Phase 1 technical & event keywords
+  // Combine AI keywords + Phase 1 technical & event keywords + Phase 2 location keywords
   // NOTE: Use underscores instead of colons/hyphens to avoid SmugMug concatenation
   const allKeywords = [
     ...metadata.keywords.tier1.map(k => k.replace(/-/g, '_')),
@@ -309,6 +335,12 @@ function writeMetadataToExif(photoPath: string, metadata: EnrichedMetadata, dryR
     `month_${metadata.event.month}`,
     `year_${metadata.event.year}`,
     ...(metadata.event.gender ? [`gender_${metadata.event.gender}`] : []),
+    // Phase 2: Location metadata keywords
+    ...(metadata.location ? [
+      `city_${metadata.location.city.toLowerCase().replace(/[\s-]+/g, '_')}`,
+      `state_${metadata.location.state.toLowerCase().replace(/[\s-]+/g, '_')}`,
+      `country_${metadata.location.country.toLowerCase().replace(/[\s-]+/g, '_')}`,
+    ] : []),
   ];
 
   // Write keywords as individual -Keywords= entries to avoid IPTC length limit
@@ -326,6 +358,14 @@ function writeMetadataToExif(photoPath: string, metadata: EnrichedMetadata, dryR
     `-XMP-aux:Lens="${metadata.technical.lens}"`,
     `-XMP-dc:Subject="${metadata.event.venue}"`,
     `-XMP-iptcExt:Event="${metadata.event.venue} - ${metadata.event.sport}"`,
+    // Phase 2: GPS coordinates
+    ...(metadata.location ? [
+      `-GPSLatitude="${metadata.location.coordinates.lat}"`,
+      `-GPSLongitude="${metadata.location.coordinates.lng}"`,
+      `-GPSLatitudeRef="${metadata.location.coordinates.lat >= 0 ? 'N' : 'S'}"`,
+      `-GPSLongitudeRef="${metadata.location.coordinates.lng >= 0 ? 'E' : 'W'}"`,
+      `-XMP-iptcExt:LocationShown="${metadata.location.city}, ${metadata.location.state}"`,
+    ] : []),
     `-overwrite_original`,
   ];
 
@@ -445,6 +485,7 @@ async function processDirectory(dirPath: string): Promise<void> {
   console.log(`   Skipped: ${skippedCount}`);
   console.log(`   Processed: ${processed}`);
   console.log(`   Errors: ${errors}`);
+  console.log(`   📍 Geocoding cache: ${getCachedLocationCount()} locations`);
 
   if (CONFIG.dryRun) {
     console.log(`\n🔍 DRY RUN - No files modified`);
