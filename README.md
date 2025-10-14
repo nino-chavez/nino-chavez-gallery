@@ -11,12 +11,14 @@ An intelligent photo gallery frontend for SmugMug that transforms photo discover
 
 ### Key Features
 
-- 🔍 **Semantic Search**: Natural language queries ("dramatic BMX backflip at sunset")
-- 🤖 **Predictive Prefetching**: AI learns user behavior to preload content
-- 📸 **Metadata Enrichment**: GPT-4 Vision generates rich photo metadata
-- 🎯 **Event Clustering**: Automatic grouping by temporal proximity
-- ⚡ **Performance Optimized**: 99% cost reduction through intelligent caching
-- 🔐 **Secure Proxy**: Server-side OAuth handling, no client-side credentials
+- 🔍 **Fuzzy Search**: Intelligent photo-level search with weighted keywords (title, caption, keywords)
+- 🎨 **Smart Metadata Display**: AI keywords transformed into human-readable titles and captions
+- 📸 **Metadata Enrichment**: Claude Vision API generates 15+ keywords per photo
+- 🖼️ **Photo Lightbox**: Full-screen viewing with keyboard navigation (← → ESC I)
+- 🏷️ **Multi-Faceted Filters**: Search by sport, album, with real-time updates
+- ⚡ **Performance Optimized**: LRU caching, request deduplication, lazy loading
+- 🔐 **Secure Proxy**: Server-side OAuth 1.0a, no client-side credentials
+- 🌙 **Dark Theme**: Professional zinc-based color palette with blue accents
 
 ### Architecture
 
@@ -213,20 +215,32 @@ UPSTASH_REDIS_TOKEN
 
 ## Roadmap
 
-### Phase 1: MVP ✅
-- [x] SmugMug API proxy
-- [x] Basic gallery UI
+### Phase 1: MVP ✅ Complete
+- [x] SmugMug API proxy with OAuth 1.0a
+- [x] Basic gallery UI with dark theme
+- [x] Album browsing with thumbnails
+- [x] Photo detail pages
 - [x] Semantic search foundation
 
-### Phase 2: AI Enhancement (In Progress)
-- [x] RAG pipeline
-- [x] Metadata enrichment scripts
+### Phase 2: AI Enhancement ✅ Complete
+- [x] Enhanced fuzzy search with Fuse.js (Option 2: zero-cost)
+- [x] Photo-level search (not just albums)
+- [x] Intelligent metadata formatting (AI keywords → human-readable)
+- [x] Multi-faceted filtering (sports, albums)
+- [x] Photo lightbox with keyboard navigation
+- [x] Real-time search updates
+- [x] Metadata enrichment scripts (Claude Vision API)
+
+### Phase 2.5: Performance & Analytics (In Progress)
 - [ ] Predictive prefetching
 - [ ] User behavior analytics
+- [ ] Performance optimizations
+- [ ] Production monitoring
 
-### Phase 3: Advanced Features
-- [ ] Multi-modal search
-- [ ] Event storytelling
+### Phase 3: Advanced Features (Future)
+- [ ] Full semantic search with embeddings (Option 1: Pinecone + RAG)
+- [ ] Multi-modal search (search by image)
+- [ ] Event storytelling (automatic grouping)
 - [ ] Photographer's assistant mode
 - [ ] Facial recognition
 
