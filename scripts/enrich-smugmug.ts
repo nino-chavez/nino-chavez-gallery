@@ -124,7 +124,7 @@ async function getAuthUser() {
 }
 
 /**
- * Get all albums
+ * Get all albums with pagination
  */
 async function getAlbums() {
   console.log('📂 Fetching albums...');
@@ -133,9 +133,30 @@ async function getAlbums() {
   const user = await getAuthUser();
   console.log(`   User: ${user.NickName}`);
 
-  // Use the user's Uris.UserAlbums to get albums
-  const response = await smugmugRequest(user.Uris.UserAlbums.Uri);
-  return response.Album || [];
+  let allAlbums: any[] = [];
+  let start = 1;
+  const count = 100; // Max per page
+
+  // Pagination loop - fetch all pages
+  while (true) {
+    console.log(`   Fetching albums page (start=${start}, count=${count})...`);
+
+    const response = await smugmugRequest(`${user.Uris.UserAlbums.Uri}?count=${count}&start=${start}`);
+    const pageAlbums = response.Album || [];
+    allAlbums.push(...pageAlbums);
+
+    console.log(`   ✓ Fetched ${pageAlbums.length} albums (total so far: ${allAlbums.length})`);
+
+    // Check if we've fetched all albums
+    if (pageAlbums.length < count || !response.Pages?.NextPage) {
+      break;
+    }
+
+    start += count;
+  }
+
+  console.log(`   ✅ Successfully fetched ${allAlbums.length} total albums\n`);
+  return allAlbums;
 }
 
 /**
