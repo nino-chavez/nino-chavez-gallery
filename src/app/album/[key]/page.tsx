@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { fetchAlbums, fetchAlbumImages } from '@/lib/smugmug/client';
+import { formatMetadata, getDisplayTags } from '@/lib/metadata-formatter';
 import type { SmugMugAlbum, SmugMugImage } from '@/types/smugmug';
 
 interface AlbumWithImages extends SmugMugAlbum {
@@ -91,37 +92,49 @@ export default async function AlbumPage({
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                 />
               </div>
-              {(photo.Title || photo.Caption || photo.Keywords) && (
-                <div className="p-4">
-                  {photo.Title && (
+              {(() => {
+                const formatted = formatMetadata({
+                  title: photo.Title,
+                  caption: photo.Caption,
+                  keywords: photo.Keywords,
+                });
+                const displayTags = getDisplayTags({
+                  title: photo.Title,
+                  caption: photo.Caption,
+                  keywords: photo.Keywords,
+                }, 3);
+
+                return (
+                  <div className="p-4">
                     <h3 className="font-semibold text-white text-sm line-clamp-2 mb-1">
-                      {photo.Title}
+                      {formatted.displayTitle}
                     </h3>
-                  )}
-                  {photo.Caption && (
-                    <p className="text-xs text-zinc-500 line-clamp-2 mb-2">
-                      {photo.Caption}
-                    </p>
-                  )}
-                  {photo.Keywords && (
-                    <div className="flex flex-wrap gap-1">
-                      {photo.Keywords.split(';').slice(0, 2).map((keyword, i) => (
-                        <span
-                          key={i}
-                          className="text-xs px-2 py-1 bg-zinc-800 text-zinc-400 rounded"
-                        >
-                          {keyword.trim()}
-                        </span>
-                      ))}
-                      {photo.Keywords.split(';').length > 2 && (
-                        <span className="text-xs px-2 py-1 bg-zinc-800 text-zinc-500 rounded">
-                          +{photo.Keywords.split(';').length - 2}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                    {formatted.displayCaption && (
+                      <p className="text-xs text-zinc-500 line-clamp-2 mb-2">
+                        {formatted.displayCaption}
+                      </p>
+                    )}
+                    {displayTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {displayTags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className={`text-xs px-2 py-1 rounded ${
+                              tag.category === 'sport'
+                                ? 'bg-blue-900/30 text-blue-400 border border-blue-800'
+                                : tag.category === 'action'
+                                ? 'bg-orange-900/30 text-orange-400 border border-orange-800'
+                                : 'bg-zinc-800 text-zinc-400'
+                            }`}
+                          >
+                            {tag.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>

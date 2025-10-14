@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Fuse from 'fuse.js';
+import { formatMetadata, getDisplayTags } from '@/lib/metadata-formatter';
 
 interface Photo {
   imageKey: string;
@@ -308,27 +309,45 @@ export default function SearchPage() {
                   )}
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-white text-sm line-clamp-2 mb-1">
-                    {photo.title}
-                  </h3>
-                  <p className="text-xs text-zinc-500 mb-2">{photo.albumName}</p>
-                  {photo.keywords.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {photo.keywords.slice(0, 2).map((keyword, i) => (
-                        <span
-                          key={i}
-                          className="text-xs px-2 py-1 bg-zinc-800 text-zinc-400 rounded"
-                        >
-                          {keyword}
-                        </span>
-                      ))}
-                      {photo.keywords.length > 2 && (
-                        <span className="text-xs px-2 py-1 bg-zinc-800 text-zinc-500 rounded">
-                          +{photo.keywords.length - 2}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const formatted = formatMetadata({
+                      title: photo.title,
+                      caption: photo.caption,
+                      keywords: photo.keywords.join('; '),
+                    });
+                    const displayTags = getDisplayTags({
+                      title: photo.title,
+                      caption: photo.caption,
+                      keywords: photo.keywords.join('; '),
+                    }, 3);
+
+                    return (
+                      <>
+                        <h3 className="font-semibold text-white text-sm line-clamp-2 mb-1">
+                          {formatted.displayTitle}
+                        </h3>
+                        <p className="text-xs text-zinc-500 mb-2">{photo.albumName}</p>
+                        {displayTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {displayTags.map((tag, i) => (
+                              <span
+                                key={i}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  tag.category === 'sport'
+                                    ? 'bg-blue-900/30 text-blue-400 border border-blue-800'
+                                    : tag.category === 'action'
+                                    ? 'bg-orange-900/30 text-orange-400 border border-orange-800'
+                                    : 'bg-zinc-800 text-zinc-400'
+                                }`}
+                              >
+                                {tag.label}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </a>
             ))}
