@@ -1,27 +1,45 @@
 import { fetchGalleryData, fetchAlbumImages } from '@/lib/smugmug/client';
 import { HomePageClient } from '@/components/HomePageClient';
 
+interface Album {
+  albumKey: string;
+  name: string;
+  description: string;
+  photoCount: number;
+  keywords: string;
+  thumbnailUrl?: string;
+}
+
 interface GalleryContext {
   username: string;
   generatedAt: string;
   totalAlbums: number;
   totalPhotos: number;
-  albums: Array<{
-    albumKey: string;
-    name: string;
-    description: string;
-    photoCount: number;
-    keywords: string;
-    thumbnailUrl?: string;
-  }>;
+  albums: Album[];
+  initialPage: number;
+  totalPages: number;
 }
 
+/**
+ * Get initial gallery context for SSR
+ *
+ * Performance optimizations:
+ * - Only loads first 12 albums on initial page load
+ * - Fetches thumbnails in parallel with limit
+ * - Reduces API calls from 21+ to 13 (1 albums + 12 thumbnails)
+ * - Client can lazy-load more albums via API
+ */
 async function getGalleryContext(): Promise<GalleryContext> {
   const galleryData = await fetchGalleryData();
 
-  // Fetch first image from each album for thumbnails (in parallel with limit)
+  const ALBUMS_PER_PAGE = 12;
+  const totalPages = Math.ceil(galleryData.albums.length / ALBUMS_PER_PAGE);
+
+  // Only load first page of albums with thumbnails
+  const firstPageAlbums = galleryData.albums.slice(0, ALBUMS_PER_PAGE);
+
   const albumsWithThumbnails = await Promise.all(
-    galleryData.albums.slice(0, 20).map(async (album) => {
+    firstPageAlbums.map(async (album) => {
       try {
         const images = await fetchAlbumImages(album.AlbumKey);
         const firstImage = images[0];
@@ -47,21 +65,14 @@ async function getGalleryContext(): Promise<GalleryContext> {
     })
   );
 
-  // Add remaining albums without thumbnails
-  const remainingAlbums = galleryData.albums.slice(20).map(album => ({
-    albumKey: album.AlbumKey,
-    name: album.Title,
-    description: album.Description || '',
-    photoCount: album.TotalImageCount,
-    keywords: album.Keywords || '',
-  }));
-
   return {
     username: process.env.SMUGMUG_USERNAME || 'ninochavez',
     generatedAt: new Date().toISOString(),
     totalAlbums: galleryData.albums.length,
     totalPhotos: galleryData.totalImages,
-    albums: [...albumsWithThumbnails, ...remainingAlbums],
+    albums: albumsWithThumbnails,
+    initialPage: 1,
+    totalPages,
   };
 }
 
@@ -104,8 +115,12 @@ export default async function HomePage() {
           </div>
         </header>
 
-        {/* Albums Grid with Intelligent Prefetching */}
-        <HomePageClient albums={context.albums} />
+        {/* Albums Grid with Pagination */}
+        <HomePageClient
+          initialAlbums={context.albums}
+          totalAlbums={context.totalAlbums}
+          totalPages={context.totalPages}
+        />
       </div>
     </main>
   );
