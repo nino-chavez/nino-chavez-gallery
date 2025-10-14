@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { fetchAlbums, fetchAlbumImages } from '@/lib/smugmug/client';
-import { AlbumGallery } from '@/components/AlbumGallery';
+import { AlbumPageClient } from '@/components/AlbumPageClient';
 import type { SmugMugAlbum, SmugMugImage } from '@/types/smugmug';
 
 interface AlbumWithImages extends SmugMugAlbum {
@@ -75,8 +75,8 @@ export default async function AlbumPage({
           </div>
         </div>
 
-        {/* Photo Gallery with Lightbox */}
-        <AlbumGallery images={album.Images} />
+        {/* Photo Gallery with Lightbox and Prefetch Tracking */}
+        <AlbumPageClient albumKey={key} images={album.Images} />
       </div>
     </main>
   );
