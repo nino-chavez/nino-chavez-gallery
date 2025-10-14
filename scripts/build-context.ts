@@ -112,7 +112,12 @@ async function getAuthUser() {
 
 /**
  * Get all albums with pagination
- * Only fetch Public and Unlisted albums (exclude Private)
+ * Only fetch Public albums (exclude Unlisted and Private)
+ *
+ * SmugMug Privacy Levels:
+ * - Public: Listed publicly, anyone can see
+ * - Unlisted: Only accessible via direct link (not listed)
+ * - Private: Only owner and granted users can see
  */
 async function getAlbums() {
   console.log('📂 Fetching albums...');
@@ -142,9 +147,16 @@ async function getAlbums() {
     start += count;
   }
 
-  // Filter out Private albums (only keep Public and Unlisted)
-  const publicAlbums = allAlbums.filter(album => album.Privacy !== 'Private');
-  console.log(`   ✅ Successfully fetched ${allAlbums.length} total albums (${publicAlbums.length} public/unlisted, ${allAlbums.length - publicAlbums.length} private filtered)\n`);
+  // Only keep Public albums (filter out Unlisted and Private)
+  const publicAlbums = allAlbums.filter(album => album.Privacy === 'Public');
+  const unlistedCount = allAlbums.filter(album => album.Privacy === 'Unlisted').length;
+  const privateCount = allAlbums.filter(album => album.Privacy === 'Private').length;
+
+  console.log(`   ✅ Successfully fetched ${allAlbums.length} total albums:`);
+  console.log(`      ${publicAlbums.length} public (included)`);
+  console.log(`      ${unlistedCount} unlisted (filtered - direct link only)`);
+  console.log(`      ${privateCount} private (filtered)\n`);
+
   return publicAlbums;
 }
 
