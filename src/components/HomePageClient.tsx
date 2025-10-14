@@ -1,9 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePrefetchAlbums, usePrefetchCandidates } from '@/lib/hooks/usePrefetch';
+import { useBrowseData } from '@/lib/hooks/useBrowseData';
+import { LayoutSwitcher } from './LayoutSwitcher';
+import { SportFirstLayout } from './layouts/SportFirstLayout';
+import { TimelineLayout } from './layouts/TimelineLayout';
+import { ActionTypeLayout } from './layouts/ActionTypeLayout';
+import { CollectionsLayout } from './layouts/CollectionsLayout';
 import Image from 'next/image';
 import Link from 'next/link';
+import type { BrowseLayout } from '@/types/layout';
+import { LAYOUT_STORAGE_KEY, DEFAULT_LAYOUT } from '@/types/layout';
 
 interface Album {
   albumKey: string;
@@ -21,18 +29,32 @@ interface HomePageClientProps {
 }
 
 /**
- * Client-side home page component with pagination and intelligent prefetching
+ * Client-side home page component with multiple browse layouts
  */
 export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomePageClientProps) {
   const [albums, setAlbums] = useState<Album[]>(initialAlbums);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentLayout, setCurrentLayout] = useState<BrowseLayout>(DEFAULT_LAYOUT);
+
+  // Extract browse data for all layouts
+  const browseData = useBrowseData(albums);
 
   // Get prefetch candidates based on user behavior
   const prefetchCandidates = usePrefetchCandidates(3);
 
   // Prefetch popular/recent albums
   usePrefetchAlbums(prefetchCandidates);
+
+  // Load saved layout preference from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(LAYOUT_STORAGE_KEY) as BrowseLayout | null;
+      if (saved) {
+        setCurrentLayout(saved);
+      }
+    }
+  }, []);
 
   const loadPage = async (page: number) => {
     if (page === currentPage || page < 1 || page > totalPages) return;
@@ -55,9 +77,26 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
     }
   };
 
-  return (
+  // Render layout selector
+  const renderLayout = () => {
+    switch (currentLayout) {
+      case 'sport-first':
+        return <SportFirstLayout sports={browseData.sports} />;
+      case 'timeline':
+        return <TimelineLayout timeline={browseData.timeline} />;
+      case 'action-type':
+        return <ActionTypeLayout actionTypes={browseData.actionTypes} />;
+      case 'collections':
+        return <CollectionsLayout collections={browseData.collections} />;
+      case 'grid':
+      default:
+        return renderGridLayout();
+    }
+  };
+
+  // Grid layout with pagination
+  const renderGridLayout = () => (
     <>
-      {/* Albums Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {albums.map((album) => (
           <Link
@@ -174,6 +213,43 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
           </button>
         </div>
       )}
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 rounded-lg p-6 flex items-center gap-4">
+            <svg
+              className="animate-spin h-8 w-8 text-blue-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span className="text-white font-medium">Loading albums...</span>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {/* Layout Switcher */}
+      <div className="mb-8 flex justify-end">
+        <LayoutSwitcher
+          currentLayout={currentLayout}
+          onLayoutChange={setCurrentLayout}
+        />
+      </div>
+
+      {/* Render Active Layout */}
+      {renderLayout()}
 
       {/* Loading Overlay */}
       {isLoading && (
