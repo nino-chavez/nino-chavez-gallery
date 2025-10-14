@@ -67,7 +67,9 @@ function extractSports(albums: Album[]): SportGroup[] {
 
   albums.forEach((album) => {
     const keywords = album.keywords.toLowerCase();
-    const keywordList = keywords.split(/[;,]/).map((k) => k.trim());
+
+    // Parse both regular and concatenated keywords
+    const keywordList = parseConcatenatedKeywords(keywords);
 
     // Check album name too for sports
     const nameWords = album.name.toLowerCase().split(/\s+/);
@@ -178,7 +180,9 @@ function extractActionTypes(albums: Album[]): ActionGroup[] {
 
   albums.forEach((album) => {
     const keywords = album.keywords.toLowerCase();
-    const keywordList = keywords.split(/[;,]/).map((k) => k.trim());
+
+    // Parse both regular and concatenated keywords
+    const keywordList = parseConcatenatedKeywords(keywords);
 
     for (const action of ACTION_KEYWORDS) {
       if (keywordList.includes(action)) {
@@ -252,6 +256,36 @@ function createCollections(albums: Album[]): Collection[] {
   });
 
   return collections;
+}
+
+/**
+ * Utility: Parse concatenated keywords
+ *
+ * SmugMug sometimes concatenates enriched keywords:
+ * "sportvolleyball" → extract "volleyball"
+ * "actionspike" → extract "spike"
+ */
+function parseConcatenatedKeywords(keywords: string): string[] {
+  const keywordList = keywords.split(/[;,]/).map((k) => k.trim());
+  const parsed: string[] = [];
+
+  const KNOWN_PREFIXES = ['sport', 'action', 'emotion', 'composition', 'setting', 'time', 'uniform', 'team'];
+
+  keywordList.forEach((keyword) => {
+    // Check if it's a concatenated keyword
+    for (const prefix of KNOWN_PREFIXES) {
+      if (keyword.startsWith(prefix) && keyword.length > prefix.length) {
+        // Extract the value after the prefix
+        const value = keyword.substring(prefix.length);
+        parsed.push(value);
+        break;
+      }
+    }
+    // Also add the original keyword
+    parsed.push(keyword);
+  });
+
+  return parsed;
 }
 
 /**
