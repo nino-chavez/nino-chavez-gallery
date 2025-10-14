@@ -41,21 +41,45 @@ interface Collection {
 /**
  * Extract sport taxonomy from keywords
  *
- * Looks for patterns like "sport:basketball", "sport:bmx"
+ * SmugMug strips colons, so we look for direct sport keywords:
+ * - "volleyball", "basketball", "bmx", "skateboarding", etc.
  */
 function extractSports(albums: Album[]): SportGroup[] {
   const sportMap = new Map<string, Album[]>();
 
+  // Known sports to detect (expandable)
+  const SPORT_KEYWORDS = [
+    'volleyball',
+    'basketball',
+    'bmx',
+    'skateboarding',
+    'soccer',
+    'football',
+    'baseball',
+    'hockey',
+    'tennis',
+    'track',
+    'wrestling',
+    'swimming',
+    'softball',
+    'lacrosse',
+  ];
+
   albums.forEach((album) => {
     const keywords = album.keywords.toLowerCase();
-    const sportMatch = keywords.match(/sport:([a-z]+)/);
+    const keywordList = keywords.split(/[;,]/).map((k) => k.trim());
 
-    if (sportMatch) {
-      const sport = sportMatch[1];
-      if (!sportMap.has(sport)) {
-        sportMap.set(sport, []);
+    // Check album name too for sports
+    const nameWords = album.name.toLowerCase().split(/\s+/);
+
+    for (const sport of SPORT_KEYWORDS) {
+      if (keywordList.includes(sport) || nameWords.includes(sport)) {
+        if (!sportMap.has(sport)) {
+          sportMap.set(sport, []);
+        }
+        sportMap.get(sport)!.push(album);
+        break; // Only assign to one sport per album
       }
-      sportMap.get(sport)!.push(album);
     }
   });
 
@@ -124,23 +148,46 @@ function extractTimeline(albums: Album[]): TimelineGroup[] {
 /**
  * Extract action types from keywords
  *
- * Looks for patterns like "action:jump", "emotion:celebrate"
+ * Since SmugMug strips colons, look for action-related keywords:
+ * - "jump", "spike", "dunk", "celebration", "intensity", etc.
  */
 function extractActionTypes(albums: Album[]): ActionGroup[] {
   const actionMap = new Map<string, Album[]>();
 
+  // Known action/emotion keywords
+  const ACTION_KEYWORDS = [
+    'jump',
+    'spike',
+    'dunk',
+    'launch',
+    'serve',
+    'shoot',
+    'pass',
+    'block',
+    'celebration',
+    'celebrate',
+    'victory',
+    'intensity',
+    'focus',
+    'teamwork',
+    'motion',
+    'action',
+    'defense',
+    'offense',
+  ];
+
   albums.forEach((album) => {
     const keywords = album.keywords.toLowerCase();
+    const keywordList = keywords.split(/[;,]/).map((k) => k.trim());
 
-    // Match action: and emotion: tags
-    const actionMatches = keywords.matchAll(/(?:action|emotion):([a-z]+)/g);
-
-    for (const match of actionMatches) {
-      const action = match[1];
-      if (!actionMap.has(action)) {
-        actionMap.set(action, []);
+    for (const action of ACTION_KEYWORDS) {
+      if (keywordList.includes(action)) {
+        if (!actionMap.has(action)) {
+          actionMap.set(action, []);
+        }
+        actionMap.get(action)!.push(album);
+        break; // Only assign to one action per album
       }
-      actionMap.get(action)!.push(album);
     }
   });
 
