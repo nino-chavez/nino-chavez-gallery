@@ -57,3 +57,6 @@ temp-downloads/
 # Logs
 logs/
 *.log
+.geocoding-cache.json
+enrichment-*.db
+enrichment-*-summary.json
