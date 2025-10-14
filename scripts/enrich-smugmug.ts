@@ -243,7 +243,7 @@ async function updateImageMetadata(imageUri: string, metadata: EnrichedMetadata)
   await smugmugRequest(imageUri, 'PATCH', {
     Title: metadata.title,
     Caption: metadata.caption,
-    Keywords: metadata.keywords.join(', '),
+    Keywords: metadata.keywords.join('; '),  // Semicolon separator (SmugMug format)
   });
 
   console.log(`    ✅ Metadata updated in SmugMug`);
