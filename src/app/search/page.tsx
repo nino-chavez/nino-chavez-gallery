@@ -41,42 +41,42 @@ export default function SearchPage() {
   // Load all photos on mount
   useEffect(() => {
     setLoading(true);
-    fetch('/api/gallery')
+    // Fetch photos from first 10 albums (balance between UX and performance)
+    fetch('/api/search?limit=10&includePhotos=true')
       .then(res => res.json())
-      .then(context => {
-        const photos: Photo[] = [];
+      .then(data => {
         const sportsSet = new Set<string>();
         const albumsMap = new Map<string, string>();
 
-        context.albums.forEach((album: any) => {
-          albumsMap.set(album.albumKey, album.name);
-
-          // For now, we'll load album details on demand
-          // This is placeholder data until we fetch actual images
-          photos.push({
-            imageKey: album.albumKey,
-            fileName: album.name,
-            title: album.name,
-            caption: album.description || '',
-            keywords: album.keywords ? album.keywords.split(';').map((k: string) => k.trim()) : [],
-            imageUrl: '',
-            thumbnailUrl: '',
-            albumName: album.name,
-            albumKey: album.albumKey,
-          });
+        // Extract unique sports and albums from photos
+        data.photos.forEach((photo: any) => {
+          albumsMap.set(photo.albumKey, photo.albumName);
 
           // Extract sports from keywords
-          if (album.keywords) {
-            album.keywords.split(';').forEach((keyword: string) => {
+          if (photo.keywords) {
+            photo.keywords.split(/[;,]/).forEach((keyword: string) => {
               const trimmed = keyword.trim().toLowerCase();
               if (trimmed.startsWith('sport:')) {
-                sportsSet.add(trimmed.replace('sport:', ''));
-              } else if (['volleyball', 'basketball', 'soccer', 'baseball', 'softball', 'football'].some(sport => trimmed.includes(sport))) {
+                sportsSet.add(trimmed.replace('sport:', '').trim());
+              } else if (['volleyball', 'basketball', 'soccer', 'baseball', 'softball', 'football', 'bmx'].some(sport => trimmed.includes(sport))) {
                 sportsSet.add(trimmed);
               }
             });
           }
         });
+
+        // Transform API response to Photo format
+        const photos: Photo[] = data.photos.map((photo: any) => ({
+          imageKey: photo.imageKey,
+          fileName: photo.fileName,
+          title: photo.title,
+          caption: photo.caption,
+          keywords: photo.keywords ? photo.keywords.split(/[;,]/).map((k: string) => k.trim()) : [],
+          imageUrl: photo.imageUrl,
+          thumbnailUrl: photo.thumbnailUrl,
+          albumName: photo.albumName,
+          albumKey: photo.albumKey,
+        }));
 
         setAllPhotos(photos);
         setAvailableSports(Array.from(sportsSet).sort());
@@ -84,7 +84,7 @@ export default function SearchPage() {
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to load gallery:', err);
+        console.error('Failed to load search data:', err);
         setLoading(false);
       });
   }, []);
@@ -194,7 +194,7 @@ export default function SearchPage() {
             Search Photos
           </h1>
           <p className="text-lg text-zinc-400 max-w-3xl">
-            Search across {allPhotos.length} albums with AI-enriched metadata
+            Search across {allPhotos.length} photos with AI-enriched metadata
           </p>
         </div>
 
