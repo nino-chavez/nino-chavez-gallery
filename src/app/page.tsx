@@ -29,12 +29,22 @@ export default async function HomePage() {
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <header className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {context.username} Photography
-          </h1>
-          <p className="text-lg text-gray-600">
-            {context.totalAlbums} albums · {context.totalPhotos} photos
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                {context.username} Photography
+              </h1>
+              <p className="text-lg text-gray-600">
+                {context.totalAlbums} albums · {context.totalPhotos} photos · {context.enrichedPhotos} AI-enriched
+              </p>
+            </div>
+            <a
+              href="/search"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Search Photos
+            </a>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
