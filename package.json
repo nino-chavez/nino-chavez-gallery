@@ -7,8 +7,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm run build:context && next build",
+    "build": "node scripts/build-wrapper.js && next build",
     "build:context": "tsx scripts/build-context.ts",
+    "build:force-context": "pnpm run build:context && next build",
     "enrich:smugmug": "tsx scripts/enrich-smugmug.ts",
     "start": "next start",
     "lint": "next lint",

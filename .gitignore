@@ -47,12 +47,13 @@ Thumbs.db
 .cache/
 *.cache
 
-# Generated files
-public/gallery-context.json
+# Generated files (excluded from git)
 public/gallery-embeddings.bin
 temp-downloads/
+
+# NOTE: gallery-context.json is now COMMITTED to git for fast production builds
+# Only regenerate when albums change: REBUILD_CONTEXT=true pnpm build
 
 # Logs
 logs/
 *.log
-gallery-context.json
