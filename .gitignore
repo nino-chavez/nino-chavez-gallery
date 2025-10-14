@@ -55,3 +55,4 @@ temp-downloads/
 # Logs
 logs/
 *.log
+gallery-context.json
