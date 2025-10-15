@@ -33,11 +33,11 @@ export function ActionTypeLayout({ actionTypes }: ActionTypeLayoutProps) {
           {/* Action Header */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-blue-400" />
+              <div className="w-10 h-10 bg-accent-primary/20 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-accent-primary" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold text-white">
+                <h2 className="text-3xl font-bold text-gray-50">
                   {actionGroup.action}
                 </h2>
                 <p className="text-zinc-500 text-sm">
@@ -54,7 +54,7 @@ export function ActionTypeLayout({ actionTypes }: ActionTypeLayoutProps) {
               <Link
                 key={album.albumKey}
                 href={`/album/${album.albumKey}`}
-                className="group block bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
+                className="group block bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-accent-primary transition-all duration-200"
               >
                 {/* Album thumbnail */}
                 <div className="aspect-square bg-zinc-800 relative overflow-hidden">
@@ -75,7 +75,7 @@ export function ActionTypeLayout({ actionTypes }: ActionTypeLayoutProps) {
                   )}
                   {/* Photo count badge */}
                   <div className="absolute top-3 right-3">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black/80 backdrop-blur-sm text-white">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-950/80 backdrop-blur-sm text-gray-50">
                       {album.photoCount}
                     </span>
                   </div>
@@ -83,7 +83,7 @@ export function ActionTypeLayout({ actionTypes }: ActionTypeLayoutProps) {
 
                 {/* Album Info */}
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold text-white mb-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-50 mb-1 line-clamp-2 group-hover:text-accent-primary transition-colors">
                     {album.name}
                   </h3>
                   {album.description && (

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { fetchAlbums, fetchAlbumImages } from '@/lib/smugmug/client';
 import { AlbumPageClient } from '@/components/AlbumPageClient';
+import { Heading, Text } from '@/components/ui';
 import type { SmugMugAlbum, SmugMugImage } from '@/types/smugmug';
 
 interface AlbumWithImages extends SmugMugAlbum {
@@ -56,20 +57,20 @@ export default async function AlbumPage({
             </svg>
             Back to Albums
           </a>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3">
+          <Heading level={1} className="mb-3">
             {album.Title}
-          </h1>
+          </Heading>
           {album.Description && (
-            <p className="text-lg text-zinc-400 mb-6 max-w-3xl">{album.Description}</p>
+            <Text variant="body" className="mb-6 max-w-3xl">{album.Description}</Text>
           )}
           <div className="flex items-center gap-6 text-sm">
-            <span className="text-zinc-400">
+            <Text variant="caption">
               <span className="text-white font-semibold">{album.Images.length}</span> {album.Images.length === 1 ? 'photo' : 'photos'}
-            </span>
+            </Text>
             {album.Keywords && (
               <>
                 <span className="text-zinc-700">•</span>
-                <span className="text-zinc-500">{album.Keywords.split(';').slice(0, 3).map(k => k.trim()).join(', ')}</span>
+                <Text variant="caption" className="text-zinc-500">{album.Keywords.split(';').slice(0, 3).map(k => k.trim()).join(', ')}</Text>
               </>
             )}
           </div>

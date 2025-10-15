@@ -7,6 +7,7 @@ import { PlayTypeMorphGrid } from '@/components/gallery/PlayTypeMorphGrid';
 import { StoryGenerationModal } from '@/components/story/StoryGenerationModal';
 import { LoadingState } from '@/components/common/LoadingState';
 import { ErrorState, EmptyState } from '@/components/common/ErrorState';
+import { Heading, Text } from '@/components/ui';
 import { usePhotoFilters } from '@/hooks/usePhotoFilters';
 import type { PhotoFilterState, Photo } from '@/types/photo';
 
@@ -57,7 +58,7 @@ export default function BrowsePage() {
     return (
       <div className="browse-page min-h-screen">
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-          <h1 className="text-xl sm:text-2xl font-medium mb-2">Browse Gallery</h1>
+          <Heading level={1} className="mb-2">Browse Gallery</Heading>
         </header>
         <LoadingState message="Loading gallery..." />
       </div>
@@ -69,7 +70,7 @@ export default function BrowsePage() {
     return (
       <div className="browse-page min-h-screen">
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-          <h1 className="text-xl sm:text-2xl font-medium mb-2">Browse Gallery</h1>
+          <Heading level={1} className="mb-2">Browse Gallery</Heading>
         </header>
         <ErrorState
           message="Failed to load gallery. Please try again."
@@ -84,10 +85,10 @@ export default function BrowsePage() {
     <div className="browse-page min-h-screen">
       {/* Page Header - Responsive padding and typography */}
       <header className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-        <h1 className="text-xl sm:text-2xl font-medium mb-2">Browse Gallery</h1>
-        <p className="text-xs sm:text-sm text-gray-500">
+        <Heading level={1} className="mb-2">Browse Gallery</Heading>
+        <Text variant="caption">
           Discover volleyball photos through interactive filters
-        </p>
+        </Text>
 
         {/* Generate Story Button - Top Right */}
         <button

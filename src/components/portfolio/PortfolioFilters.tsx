@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { PhotoFilterState } from '@/types/photo';
+import { Button } from '@/components/ui';
 
 export function PortfolioFilters() {
   const router = useRouter();
@@ -39,15 +40,15 @@ export function PortfolioFilters() {
   return (
     <div className="mb-6">
       <div className="flex flex-wrap gap-2 mb-4">
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <Button variant="primary" size="md">
           ⭐ Portfolio Quality
-        </button>
-        <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        </Button>
+        <Button variant="primary" size="md" className="bg-green-600 hover:bg-green-700">
           🖨️ Print Ready
-        </button>
-        <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+        </Button>
+        <Button variant="primary" size="md" className="bg-purple-600 hover:bg-purple-700">
           📈 High Impact
-        </button>
+        </Button>
       </div>
 
       <div className="text-sm text-gray-600">

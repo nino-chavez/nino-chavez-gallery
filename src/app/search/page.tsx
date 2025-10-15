@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Fuse from 'fuse.js';
+import { Heading, Text } from '@/components/ui';
 import { formatMetadata, getDisplayTags } from '@/lib/metadata-formatter';
 
 interface Photo {
@@ -190,12 +191,12 @@ export default function SearchPage() {
             </svg>
             Back to Albums
           </a>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3">
+          <Heading level={1} className="mb-3">
             Search Photos
-          </h1>
-          <p className="text-lg text-zinc-400 max-w-3xl">
+          </Heading>
+          <Text variant="body" className="max-w-3xl">
             Search across {allPhotos.length} photos with AI-enriched metadata
-          </p>
+          </Text>
         </div>
 
         {/* Search Input */}
@@ -214,7 +215,7 @@ export default function SearchPage() {
           </div>
 
           {/* Search Stats */}
-          <p className="mt-3 text-sm text-zinc-500">
+          <Text variant="caption" className="mt-3">
             {loading ? (
               'Loading...'
             ) : hasActiveFilters ? (
@@ -222,7 +223,7 @@ export default function SearchPage() {
             ) : (
               'Enter a search term or apply filters'
             )}
-          </p>
+          </Text>
         </div>
 
         {/* Filters */}
@@ -230,7 +231,7 @@ export default function SearchPage() {
           {/* Sports Filter */}
           {availableSports.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-white mb-3">Sports</h3>
+              <Heading level={3} className="mb-3">Sports</Heading>
               <div className="flex flex-wrap gap-2">
                 {availableSports.slice(0, 10).map((sport) => (
                   <button
@@ -252,7 +253,7 @@ export default function SearchPage() {
           {/* Albums Filter */}
           {availableAlbums.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-white mb-3">Albums</h3>
+              <Heading level={3} className="mb-3">Albums</Heading>
               <div className="flex flex-wrap gap-2">
                 {availableAlbums.slice(0, 8).map((album) => (
                   <button
@@ -323,10 +324,10 @@ export default function SearchPage() {
 
                     return (
                       <>
-                        <h3 className="font-semibold text-white text-sm line-clamp-2 mb-1">
+                        <Heading level={3} className="line-clamp-2 mb-1">
                           {formatted.displayTitle}
-                        </h3>
-                        <p className="text-xs text-zinc-500 mb-2">{photo.albumName}</p>
+                        </Heading>
+                        <Text variant="caption" className="mb-2">{photo.albumName}</Text>
                         {displayTags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {displayTags.map((tag, i) => (
@@ -370,10 +371,10 @@ export default function SearchPage() {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            <h3 className="text-xl font-semibold text-white mb-2">No Results Found</h3>
-            <p className="text-zinc-500 mb-4">
+            <Heading level={3} className="mb-2">No Results Found</Heading>
+            <Text variant="body" className="mb-4">
               Try adjusting your search or filters
-            </p>
+            </Text>
             <button
               onClick={clearFilters}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
@@ -386,9 +387,9 @@ export default function SearchPage() {
         {/* Example Queries */}
         {!hasActiveFilters && (
           <div className="bg-zinc-900 rounded-xl p-8">
-            <h2 className="text-xl font-semibold text-white mb-6">
+            <Heading level={2} className="mb-6">
               Try These Searches
-            </h2>
+            </Heading>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {[
                 'volleyball',

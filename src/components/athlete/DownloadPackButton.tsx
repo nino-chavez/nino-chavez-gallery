@@ -19,21 +19,21 @@ export function DownloadPackButton({ photos, packType }: DownloadPackButtonProps
           title: 'Portfolio Pack',
           description: 'High-quality photos for professional use',
           icon: '⭐',
-          color: 'bg-yellow-600 hover:bg-yellow-700'
+          color: 'bg-emotion-triumph hover:bg-emotion-triumph-secondary'
         };
       case 'social':
         return {
           title: 'Social Media Pack',
           description: 'Optimized photos for social sharing',
           icon: '📱',
-          color: 'bg-blue-600 hover:bg-blue-700'
+          color: 'bg-accent-primary hover:bg-accent-hover'
         };
       case 'print':
         return {
           title: 'Print Pack',
           description: 'Print-ready high-resolution photos',
           icon: '🖨️',
-          color: 'bg-green-600 hover:bg-green-700'
+          color: 'bg-emotion-serenity hover:bg-emotion-serenity-secondary'
         };
     }
   };
@@ -88,7 +88,7 @@ export function DownloadPackButton({ photos, packType }: DownloadPackButtonProps
       <button
         onClick={handleDownload}
         disabled={isGenerating || isGenerated}
-        className={`px-4 py-2 text-white rounded-lg transition-colors flex items-center gap-2 ${
+        className={`px-4 py-2 text-gray-50 rounded-lg transition-colors flex items-center gap-2 ${
           isGenerating || isGenerated
             ? 'bg-gray-400 cursor-not-allowed'
             : packDetails.color
@@ -96,7 +96,7 @@ export function DownloadPackButton({ photos, packType }: DownloadPackButtonProps
       >
         {isGenerating ? (
           <>
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-50 border-t-transparent" />
             Generating...
           </>
         ) : isGenerated ? (

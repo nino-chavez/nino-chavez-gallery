@@ -9,6 +9,7 @@ import { PortfolioGrid } from '@/components/portfolio/PortfolioGrid';
 import { PhotoGravity } from '@/components/portfolio/PhotoGravity';
 import { LoadingState } from '@/components/common/LoadingState';
 import { ErrorState } from '@/components/common/ErrorState';
+import { Heading, Text } from '@/components/ui';
 import type { Photo } from '@/types/photo';
 
 /**
@@ -23,13 +24,13 @@ type ViewMode = 'gradient' | 'grid' | '3d';
 
 /**
  * Portfolio Page Component
- * 
+ *
  * Inner component that uses useSearchParams and must be wrapped in Suspense
  */
 function PortfolioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // View mode state management
   const [viewMode, setViewMode] = useState<ViewMode>('gradient');
 
@@ -99,7 +100,7 @@ function PortfolioPageContent() {
     return (
       <div className="portfolio-page min-h-screen">
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-          <h1 className="text-xl sm:text-2xl font-medium mb-6">Portfolio</h1>
+          <Heading level={1} className="mb-6">Portfolio</Heading>
         </header>
         <LoadingState message="Loading portfolio..." />
       </div>
@@ -111,7 +112,7 @@ function PortfolioPageContent() {
     return (
       <div className="portfolio-page min-h-screen">
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-          <h1 className="text-xl sm:text-2xl font-medium mb-6">Portfolio</h1>
+          <Heading level={1} className="mb-6">Portfolio</Heading>
         </header>
         <ErrorState
           message="Failed to load portfolio. Please try again."
@@ -126,7 +127,7 @@ function PortfolioPageContent() {
     <div className="portfolio-page min-h-screen">
       {/* Page Header */}
       <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-        <h1 className="text-xl sm:text-2xl font-medium mb-6">Portfolio</h1>
+        <Heading level={1} className="mb-6">Portfolio</Heading>
 
         {/* View Mode Toggles (Task 2.1) */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -151,9 +152,9 @@ function PortfolioPageContent() {
         </div>
 
         {/* Photo Count Display */}
-        <div className="text-xs sm:text-sm text-gray-500">
+        <Text variant="caption">
           {photos.length} portfolio photos
-        </div>
+        </Text>
       </header>
 
       {/* Main Content Area with AnimatePresence for smooth transitions (Task 3.2) */}
@@ -205,12 +206,12 @@ function PortfolioPageContent() {
                 />
               ) : (
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center py-12">
-                  <div className="text-lg mb-4">
+                  <Text variant="body" className="text-lg mb-4">
                     3D view limited to 100 photos for performance
-                  </div>
-                  <div className="text-sm text-gray-600 mb-6">
+                  </Text>
+                  <Text variant="caption" className="mb-6">
                     Showing top 100 by quality score. Switch to Grid view to see all {photos.length} photos.
-                  </div>
+                  </Text>
                   <button
                     onClick={() => handleViewModeChange('grid')}
                     className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -225,8 +226,10 @@ function PortfolioPageContent() {
 
         {/* Empty state */}
         {photos.length === 0 && (
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center py-12 text-gray-500">
-            No portfolio photos found. Check back later!
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center py-12">
+            <Text variant="caption">
+              No portfolio photos found. Check back later!
+            </Text>
           </div>
         )}
       </main>
@@ -276,7 +279,7 @@ function ViewModeButton({ active, onClick, icon, label }: ViewModeButtonProps) {
  * - Responsive layout for mobile (375px), tablet (768px), desktop (1280px+)
  * - Loading and error states with retry
  * - Photo click navigation to detail page with return URL
- * 
+ *
  * Wrapped in Suspense to handle useSearchParams() CSR bailout
  */
 export default function PortfolioPage() {
@@ -284,7 +287,7 @@ export default function PortfolioPage() {
     <Suspense fallback={
       <div className="portfolio-page min-h-screen">
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-          <h1 className="text-xl sm:text-2xl font-medium mb-6">Portfolio</h1>
+          <Heading level={1} className="mb-6">Portfolio</Heading>
         </header>
         <LoadingState message="Loading portfolio..." />
       </div>

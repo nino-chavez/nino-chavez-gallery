@@ -29,14 +29,14 @@ export function PhotoDetail({ photo }: PhotoDetailProps) {
 
             {/* Action buttons overlay */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <button className="bg-black bg-opacity-50 text-white px-3 py-2 rounded text-sm hover:bg-opacity-70 transition-colors">
+              <button className="bg-gray-950 bg-opacity-50 text-gray-50 px-3 py-2 rounded text-sm hover:bg-opacity-70 transition-colors">
                 Share
               </button>
-              <button className="bg-black bg-opacity-50 text-white px-3 py-2 rounded text-sm hover:bg-opacity-70 transition-colors">
+              <button className="bg-gray-950 bg-opacity-50 text-gray-50 px-3 py-2 rounded text-sm hover:bg-opacity-70 transition-colors">
                 Download
               </button>
               {photo.metadata?.print_ready && (
-                <button className="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors">
+                <button className="bg-emotion-serenity text-gray-50 px-3 py-2 rounded text-sm hover:bg-emotion-serenity-secondary transition-colors">
                   🖨️ Order Print
                 </button>
               )}
@@ -62,12 +62,12 @@ export function PhotoDetail({ photo }: PhotoDetailProps) {
 
           {/* Actions */}
           <div className="photo-actions space-y-3">
-            <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+            <button className="w-full bg-accent-primary text-gray-50 py-3 px-4 rounded-lg hover:bg-accent-hover transition-colors">
               Download Full Resolution
             </button>
 
             {photo.metadata?.print_ready && (
-              <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors">
+              <button className="w-full bg-emotion-serenity text-gray-50 py-3 px-4 rounded-lg hover:bg-emotion-serenity-secondary transition-colors">
                 Order Professional Print
               </button>
             )}

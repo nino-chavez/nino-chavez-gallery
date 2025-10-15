@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { EMOTION_ICONS } from '@/lib/motion-tokens';
+import { Heading, Text, Button } from '@/components/ui';
 import type { NarrativeArc } from '@/lib/story-curation/narrative-arcs';
 
 interface StoryViewerProps {
@@ -57,12 +58,13 @@ export function StoryViewer({ story, autoPlay = false, onClose }: StoryViewerPro
 
   return (
     <div className="story-viewer fixed inset-0 z-50 bg-black" data-testid="story-viewer">
-      {/* Close button */}
+      {/* Close button - Enhanced for accessibility */}
       {onClose && (
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-50 text-white/80 hover:text-white text-4xl leading-none transition-colors"
+          className="absolute top-4 right-4 z-50 w-12 h-12 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full text-2xl leading-none transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
           aria-label="Close story viewer"
+          title="Close (Esc)"
         >
           ×
         </button>
@@ -88,12 +90,12 @@ export function StoryViewer({ story, autoPlay = false, onClose }: StoryViewerPro
 
       {/* Story header */}
       <div className="absolute top-8 left-8 text-white z-40 max-w-2xl">
-        <h2 className="text-3xl font-bold mb-2">{story.title}</h2>
-        <p className="text-sm opacity-80">{story.description}</p>
-        <div className="flex gap-4 mt-4 text-sm opacity-60">
-          <span>⭐ Quality: {story.metadata.avgQuality}/10</span>
-          <span>⚡ {story.metadata.peakMoments} peak moments</span>
-          <span>🎬 {story.metadata.duration}</span>
+        <Heading level={2} className="mb-2">{story.title}</Heading>
+        <Text variant="caption" className="opacity-80">{story.description}</Text>
+        <div className="flex gap-4 mt-4 opacity-60">
+          <Text variant="caption">⭐ Quality: {story.metadata.avgQuality}/10</Text>
+          <Text variant="caption">⚡ {story.metadata.peakMoments} peak moments</Text>
+          <Text variant="caption">🎬 {story.metadata.duration}</Text>
         </div>
       </div>
 
@@ -106,43 +108,47 @@ export function StoryViewer({ story, autoPlay = false, onClose }: StoryViewerPro
         />
       </div>
 
-      {/* Navigation controls */}
+      {/* Navigation controls - Enhanced for accessibility */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4">
         <button
           onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
           disabled={currentIndex === 0}
-          className="bg-white/20 backdrop-blur px-6 py-3 rounded-full hover:bg-white/30 transition disabled:opacity-30 disabled:cursor-not-allowed text-white"
-          aria-label="Previous photo"
+          className="w-12 h-12 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent active:scale-95"
+          aria-label="Previous story"
+          title="Previous (Arrow Left)"
         >
-          ← Prev
+          ←
         </button>
         <button
           onClick={() => setIsPlaying(!isPlaying)}
-          className="bg-white/20 backdrop-blur px-6 py-3 rounded-full hover:bg-white/30 transition text-white"
+          className="w-12 h-12 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent active:scale-95"
           aria-label={isPlaying ? 'Pause' : 'Play'}
+          title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
         >
-          {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+          {isPlaying ? '⏸' : '▶'}
         </button>
         <button
           onClick={() => setCurrentIndex(Math.min(story.photos.length - 1, currentIndex + 1))}
           disabled={currentIndex === story.photos.length - 1}
-          className="bg-white/20 backdrop-blur px-6 py-3 rounded-full hover:bg-white/30 transition disabled:opacity-30 disabled:cursor-not-allowed text-white"
-          aria-label="Next photo"
+          className="w-12 h-12 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent active:scale-95"
+          aria-label="Next story"
+          title="Next (Arrow Right)"
         >
-          Next →
+          →
         </button>
       </div>
 
-      {/* Progress dots */}
+      {/* Progress dots - Enhanced for accessibility */}
       <div className="absolute bottom-64 left-1/2 -translate-x-1/2 flex gap-2">
         {story.photos.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrentIndex(i)}
-            className={`h-2 rounded-full transition-all ${
+            className={`h-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent ${
               i === currentIndex ? 'bg-white w-8' : 'bg-white/40 w-2'
             }`}
             aria-label={`Go to photo ${i + 1}`}
+            title={`Photo ${i + 1} of ${story.photos.length}`}
           />
         ))}
       </div>
@@ -206,13 +212,13 @@ function EmotionalCurveGraph({
       </svg>
 
       {/* Emotion label */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-sm flex items-center gap-2">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white flex items-center gap-2">
         <span className="text-2xl">
           {EMOTION_ICONS[curve[currentIndex].emotion as keyof typeof EMOTION_ICONS]}
         </span>
-        <span className="capitalize">{curve[currentIndex].emotion}</span>
-        <span className="opacity-60">•</span>
-        <span>Intensity: {curve[currentIndex].intensity}/10</span>
+        <Text variant="caption" className="capitalize text-white">{curve[currentIndex].emotion}</Text>
+        <Text variant="caption" className="opacity-60 text-white">•</Text>
+        <Text variant="caption" className="text-white">Intensity: {curve[currentIndex].intensity}/10</Text>
       </div>
     </div>
   );

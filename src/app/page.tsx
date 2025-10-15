@@ -7,6 +7,7 @@ import { PlayTypeMorphGrid } from '@/components/gallery/PlayTypeMorphGrid';
 import { EmotionTimeline } from '@/components/interactions/EmotionTimeline';
 import { MagneticFilterBar } from '@/components/filters/MagneticFilterBar';
 import { ContextualCursor } from '@/components/interactions/ContextualCursor';
+import { Heading, Text } from '@/components/ui';
 import { usePhotoFilters } from '@/hooks/usePhotoFilters';
 import type { PhotoFilterState, Photo } from '@/types/photo';
 
@@ -42,12 +43,12 @@ export default function PortfolioPage() {
 
       {/* Header - Minimal, Photos First */}
       <header className="mx-auto max-w-7xl px-6 pt-12 pb-8">
-        <h1 className="text-2xl font-medium mb-2 text-white/90">
+        <Heading level={1} className="mb-2">
           Portfolio
-        </h1>
-        <p className="text-sm text-white/50">
+        </Heading>
+        <Text variant="caption">
           {filteredPhotos.length} photos
-        </p>
+        </Text>
 
         {/* Simple text filters - minimal, top right */}
         <div className="absolute top-12 right-6 flex gap-4 text-xs">
@@ -89,7 +90,7 @@ export default function PortfolioPage() {
         <div className="flex items-center justify-center py-20 animate-fade-in-up">
           <div className="text-center">
             <div className="spinner mx-auto mb-6"></div>
-            <p className="text-gray-500 text-lg">Loading portfolio...</p>
+            <Text variant="body" className="text-lg">Loading portfolio...</Text>
           </div>
         </div>
       )}
@@ -102,10 +103,10 @@ export default function PortfolioPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <h2 className="text-2xl font-semibold mb-3 text-white">No photos found</h2>
-            <p className="text-base mb-6 text-white/50">
+            <Heading level={2} className="mb-3">No photos found</Heading>
+            <Text variant="body" className="mb-6 text-white/50">
               Try adjusting your filters or check back later
-            </p>
+            </Text>
             <button
               onClick={() => setFilters({})}
               className="px-6 py-3 text-sm font-medium rounded-xl bg-white text-black hover:bg-white/90 transition-all duration-200"
@@ -124,14 +125,14 @@ export default function PortfolioPage() {
           onMouseLeave={() => setHoveredPhoto(null)}
         >
           {viewMode === 'quality' && (
-            <QualityGradientGrid 
+            <QualityGradientGrid
               photos={filteredPhotos}
               onPhotoClick={(photo) => setHoveredPhoto(photo)}
             />
           )}
           {viewMode === 'grid' && (
-            <PlayTypeMorphGrid 
-              photos={filteredPhotos} 
+            <PlayTypeMorphGrid
+              photos={filteredPhotos}
               activePlayType={null}
               onPhotoClick={(photo) => setHoveredPhoto(photo)}
             />

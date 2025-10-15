@@ -40,11 +40,11 @@ export function CollectionsLayout({ collections }: CollectionsLayoutProps) {
             {/* Collection Header */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-6 h-6 text-blue-400" />
+                <div className="w-12 h-12 bg-accent-primary/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-6 h-6 text-accent-primary" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-white">
+                  <h2 className="text-3xl font-bold text-gray-50">
                     {collection.name}
                   </h2>
                   <p className="text-zinc-400 mt-1">{collection.description}</p>
@@ -61,7 +61,7 @@ export function CollectionsLayout({ collections }: CollectionsLayoutProps) {
                 <Link
                   key={album.albumKey}
                   href={`/album/${album.albumKey}`}
-                  className="group block bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
+                  className="group block bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-accent-primary transition-all duration-200"
                 >
                   {/* Album thumbnail */}
                   <div className="aspect-square bg-zinc-800 relative overflow-hidden">
@@ -82,7 +82,7 @@ export function CollectionsLayout({ collections }: CollectionsLayoutProps) {
                     )}
                     {/* Photo count badge */}
                     <div className="absolute top-3 right-3">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black/80 backdrop-blur-sm text-white">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-950/80 backdrop-blur-sm text-gray-50">
                         {album.photoCount}
                       </span>
                     </div>
@@ -90,7 +90,7 @@ export function CollectionsLayout({ collections }: CollectionsLayoutProps) {
 
                   {/* Album Info */}
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold text-white mb-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-lg font-semibold text-gray-50 mb-1 line-clamp-2 group-hover:text-accent-primary transition-colors">
                       {album.name}
                     </h3>
                     {album.description && (

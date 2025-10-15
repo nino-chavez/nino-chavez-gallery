@@ -103,7 +103,7 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
             key={album.albumKey}
             href={`/album/${album.albumKey}`}
             prefetch={prefetchCandidates.includes(album.albumKey)}
-            className="group block bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all duration-200"
+            className="group block bg-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-accent-primary transition-all duration-200"
           >
             {/* Album thumbnail */}
             <div className="aspect-square bg-zinc-800 relative overflow-hidden">
@@ -124,7 +124,7 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
               )}
               {/* Photo count badge */}
               <div className="absolute top-3 right-3">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black/80 backdrop-blur-sm text-white">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-950/80 backdrop-blur-sm text-gray-50">
                   {album.photoCount}
                 </span>
               </div>
@@ -132,7 +132,7 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
 
             {/* Album Info */}
             <div className="p-4">
-              <h2 className="text-lg font-semibold text-white mb-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
+              <h2 className="text-lg font-semibold text-gray-50 mb-1 line-clamp-2 group-hover:text-accent-primary transition-colors">
                 {album.name}
               </h2>
               {album.description && (
@@ -162,7 +162,7 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
           <button
             onClick={() => loadPage(currentPage - 1)}
             disabled={currentPage === 1 || isLoading}
-            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors duration-200"
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:cursor-not-allowed text-gray-50 rounded-lg transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -191,8 +191,8 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
                   disabled={isLoading}
                   className={`min-w-[40px] px-3 py-2 rounded-lg transition-colors duration-200 ${
                     currentPage === pageNum
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+                      ? 'bg-accent-primary text-gray-50'
+                      : 'bg-zinc-800 hover:bg-zinc-700 text-gray-50'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {pageNum}
@@ -205,7 +205,7 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
           <button
             onClick={() => loadPage(currentPage + 1)}
             disabled={currentPage === totalPages || isLoading}
-            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors duration-200"
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:cursor-not-allowed text-gray-50 rounded-lg transition-colors duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -216,10 +216,10 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-950/50 flex items-center justify-center z-50">
           <div className="bg-zinc-900 rounded-lg p-6 flex items-center gap-4">
             <svg
-              className="animate-spin h-8 w-8 text-blue-500"
+              className="animate-spin h-8 w-8 text-accent-primary"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -231,7 +231,7 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <span className="text-white font-medium">Loading albums...</span>
+            <span className="text-gray-50 font-medium">Loading albums...</span>
           </div>
         </div>
       )}
@@ -253,10 +253,10 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-950/50 flex items-center justify-center z-50">
           <div className="bg-zinc-900 rounded-lg p-6 flex items-center gap-4">
             <svg
-              className="animate-spin h-8 w-8 text-blue-500"
+              className="animate-spin h-8 w-8 text-accent-primary"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -268,7 +268,7 @@ export function HomePageClient({ initialAlbums, totalAlbums, totalPages }: HomeP
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <span className="text-white font-medium">Loading albums...</span>
+            <span className="text-gray-50 font-medium">Loading albums...</span>
           </div>
         </div>
       )}

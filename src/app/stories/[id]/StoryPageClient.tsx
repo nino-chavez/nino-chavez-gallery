@@ -6,6 +6,7 @@ import { StoryViewer } from '@/components/story/StoryViewer';
 import { ShareButton } from '@/components/story/ShareButton';
 import { ExportPDFButton } from '@/components/story/ExportPDFButton';
 import { LoadingState } from '@/components/common/LoadingState';
+import { Heading, Text } from '@/components/ui';
 import type { NarrativeArc } from '@/lib/story-curation/narrative-arcs';
 
 const fetcher = (url: string) => fetch(url).then(r => {
@@ -24,7 +25,7 @@ interface StoryPageClientProps {
 
 export function StoryPageClient({ storyId }: StoryPageClientProps) {
   const router = useRouter();
-  
+
   const { data, error, isLoading, mutate } = useSWR(
     `/api/stories/${storyId}`,
     fetcher,
@@ -46,15 +47,15 @@ export function StoryPageClient({ storyId }: StoryPageClientProps) {
   // Error state
   if (error || !data?.story) {
     const isNotFound = error?.message?.includes('not found');
-    
+
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="max-w-2xl mx-auto px-6 text-center">
           {isNotFound ? (
             <div className="text-white">
               <div className="text-6xl mb-4">📖</div>
-              <h2 className="text-2xl font-bold mb-2">Story Not Found</h2>
-              <p className="text-white/80 mb-6">This story doesn't exist or has been deleted.</p>
+              <Heading level={2} className="mb-2">Story Not Found</Heading>
+              <Text variant="body" className="text-white/80 mb-6">This story doesn't exist or has been deleted.</Text>
               <button
                 onClick={() => router.push('/browse')}
                 className="bg-white/20 backdrop-blur px-6 py-3 rounded-full hover:bg-white/30 transition"
@@ -65,8 +66,8 @@ export function StoryPageClient({ storyId }: StoryPageClientProps) {
           ) : (
             <div className="text-white">
               <div className="text-6xl mb-4">⚠️</div>
-              <h3 className="text-2xl font-bold mb-2">Oops!</h3>
-              <p className="text-white/80 mb-6">Failed to load story. Please check your connection and try again.</p>
+              <Heading level={3} className="mb-2">Oops!</Heading>
+              <Text variant="body" className="text-white/80 mb-6">Failed to load story. Please check your connection and try again.</Text>
               <button
                 onClick={() => mutate()}
                 className="bg-white/20 backdrop-blur px-6 py-3 rounded-full hover:bg-white/30 transition flex items-center gap-2 mx-auto"

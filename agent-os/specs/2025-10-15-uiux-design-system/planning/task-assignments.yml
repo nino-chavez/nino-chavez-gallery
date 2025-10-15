@@ -1,0 +1,167 @@
+# Task Assignments for UI/UX Design System Implementation + Experiential Layer Enhancements
+
+assignments:
+  # PHASE 1: Design System Enforcement
+  - task_group: "1.1"
+    task_name: "Core Design System Components"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: []
+    estimated_duration: "1.5 days"
+
+  - task_group: "1.2"
+    task_name: "Button Component Migration"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.1"]
+    estimated_duration: "1 day"
+
+  - task_group: "1.3"
+    task_name: "Typography Component Migration"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.1"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "1.4"
+    task_name: "Color Token Enforcement"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: []
+    estimated_duration: "1 day"
+
+  - task_group: "1.5"
+    task_name: "Phase 1 Testing & Verification"
+    assignee: testing-engineer
+    verifier: frontend-verifier
+    dependencies: ["1.1", "1.2", "1.3", "1.4"]
+    estimated_duration: "0.5 days"
+
+  # PHASE 2: Component Refinement
+  - task_group: "2.1"
+    task_name: "PortfolioGrid Layout Optimization"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "2.2"
+    task_name: "EmotionTimeline GSAP Repair"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "2.3"
+    task_name: "StoryViewer Accessibility Enhancement"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "2.4"
+    task_name: "Skeleton Loading States Implementation"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "2.5"
+    task_name: "Phase 2 Testing & Verification"
+    assignee: testing-engineer
+    verifier: frontend-verifier
+    dependencies: ["2.1", "2.2", "2.3", "2.4"]
+    estimated_duration: "0.5 days"
+
+  # PHASE 3: Polish & Micro-Interactions + Experiential Enhancements
+  - task_group: "3.1"
+    task_name: "EmptyState Component Creation"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "3.2"
+    task_name: "Micro-Interactions Enhancement"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "3.3"
+    task_name: "Spring Physics Refinement"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["2.5"]
+    estimated_duration: "0.25 days"
+
+  - task_group: "3.4"
+    task_name: "Page Transitions & Choreographed Entrances (NEW - Experiential Layer)"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.75 days"
+
+  - task_group: "3.5"
+    task_name: "Emotion Ambience & Primary Filter (NEW - Experiential Layer)"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.75 days"
+
+  - task_group: "3.6"
+    task_name: "Emotion-Driven Hover Effects (NEW - Experiential Layer)"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["3.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "3.7"
+    task_name: "Phase 3 Testing & Verification (UPDATED for Experiential Layer)"
+    assignee: testing-engineer
+    verifier: frontend-verifier
+    dependencies: ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6"]
+    estimated_duration: "0.75 days"
+
+  # PHASE 4: Accessibility & Responsiveness
+  - task_group: "4.1"
+    task_name: "Contrast Audit & Fixes"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["2.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "4.2"
+    task_name: "Focus Indicators Enhancement"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["1.5"]
+    estimated_duration: "0.25 days"
+
+  - task_group: "4.3"
+    task_name: "Mobile Responsiveness Optimization"
+    assignee: ui-designer
+    verifier: frontend-verifier
+    dependencies: ["2.5"]
+    estimated_duration: "0.5 days"
+
+  - task_group: "4.4"
+    task_name: "Phase 4 Testing & Verification"
+    assignee: testing-engineer
+    verifier: frontend-verifier
+    dependencies: ["4.1", "4.2", "4.3"]
+    estimated_duration: "0.5 days"
+
+summary:
+  total_task_groups: 21
+  total_phases: 4
+  primary_implementers:
+    - ui-designer (17 task groups)
+    - testing-engineer (4 task groups)
+  primary_verifier: frontend-verifier
+  total_estimated_duration: "10-14 days"
+  experiential_layer_task_groups: ["3.4", "3.5", "3.6"]
+  critical_path:
+    - "Phase 1 must complete before Phase 2"
+    - "Phase 2 must complete before Phase 3"
+    - "Phase 4 can run parallel with Phase 3 after Phase 2"

@@ -67,7 +67,7 @@ export function LayoutSwitcher({ currentLayout, onLayoutChange }: LayoutSwitcher
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors duration-200"
+        className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-gray-50 rounded-lg transition-colors duration-200"
         aria-label="Change browse layout"
         aria-expanded={isOpen}
       >
@@ -94,7 +94,7 @@ export function LayoutSwitcher({ currentLayout, onLayoutChange }: LayoutSwitcher
                   onClick={() => handleLayoutChange(layout.id)}
                   className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors duration-200 ${
                     isActive
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-accent-primary text-gray-50'
                       : 'hover:bg-zinc-800 text-zinc-300'
                   }`}
                 >
@@ -106,7 +106,7 @@ export function LayoutSwitcher({ currentLayout, onLayoutChange }: LayoutSwitcher
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
                             isActive
-                              ? 'bg-blue-700 text-blue-100'
+                              ? 'bg-accent-hover text-indigo-100'
                               : 'bg-zinc-700 text-zinc-400'
                           }`}
                         >

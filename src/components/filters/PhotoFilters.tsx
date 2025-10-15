@@ -1,11 +1,24 @@
+'use client';
+
 import { useState } from 'react';
 import type { PhotoFilterState } from '@/types/photo';
+import { Button } from '@/components/ui';
 
 interface PhotoFiltersProps {
   filters: PhotoFilterState;
   onChange: (filters: PhotoFilterState) => void;
   photoCount: number;
 }
+
+// Emotion color mapping for badges
+const EMOTION_COLORS = {
+  triumph: 'bg-emotion-triumph/10 text-emotion-triumph border-emotion-triumph/30',
+  focus: 'bg-emotion-focus/10 text-emotion-focus border-emotion-focus/30',
+  intensity: 'bg-emotion-intensity/10 text-emotion-intensity border-emotion-intensity/30',
+  determination: 'bg-emotion-determination/10 text-emotion-determination border-emotion-determination/30',
+  excitement: 'bg-emotion-excitement/10 text-emotion-excitement border-emotion-excitement/30',
+  serenity: 'bg-emotion-serenity/10 text-emotion-serenity border-emotion-serenity/30',
+};
 
 export function PhotoFilters({ filters, onChange, photoCount }: PhotoFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -19,7 +32,7 @@ export function PhotoFilters({ filters, onChange, photoCount }: PhotoFiltersProp
   };
 
   return (
-    <div className="photo-filters bg-white rounded-lg shadow-sm border p-4 mb-6">
+    <div className="photo-filters bg-gray-50 rounded-lg shadow-sm border p-4 mb-6">
       {/* Quick filters */}
       <div className="quick-filters flex flex-wrap gap-2 mb-4">
         <FilterButton
@@ -46,22 +59,26 @@ export function PhotoFilters({ filters, onChange, photoCount }: PhotoFiltersProp
 
       {/* Advanced filters toggle */}
       <div className="flex items-center justify-between mb-4">
-        <button
+        <Button
+          variant="icon"
+          size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="text-accent hover:text-accent-hover"
         >
           {isExpanded ? 'Hide' : 'Show'} Advanced Filters
-        </button>
+        </Button>
 
         {(filters.portfolioWorthy || filters.printReady || filters.socialMediaOptimized ||
           filters.minQualityScore || filters.emotions?.length || filters.compositions?.length ||
           filters.playTypes?.length || filters.actionIntensities?.length || filters.useCases?.length) && (
-          <button
+          <Button
+            variant="icon"
+            size="sm"
             onClick={clearFilters}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700"
           >
             Clear all
-          </button>
+          </Button>
         )}
       </div>
 
@@ -82,9 +99,9 @@ export function PhotoFilters({ filters, onChange, photoCount }: PhotoFiltersProp
             </div>
           </FilterGroup>
 
-          {/* Emotion multi-select */}
+          {/* Emotion multi-select with emotion palette colors */}
           <FilterGroup label="Emotion">
-            <MultiSelect
+            <EmotionMultiSelect
               options={['triumph', 'focus', 'intensity', 'determination', 'excitement', 'serenity']}
               selected={filters.emotions || []}
               onChange={(emotions) => updateFilters({ emotions })}
@@ -148,7 +165,7 @@ export function PhotoFilters({ filters, onChange, photoCount }: PhotoFiltersProp
 
 // Helper Components
 interface FilterButtonProps {
-  active: boolean;
+  active?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }
@@ -159,8 +176,8 @@ function FilterButton({ active, onClick, children }: FilterButtonProps) {
       onClick={onClick}
       className={`px-3 py-1 text-sm rounded-full border transition-colors ${
         active
-          ? 'bg-blue-100 text-blue-800 border-blue-300'
-          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          ? 'bg-accent/10 text-accent border-accent/30'
+          : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
       }`}
     >
       {children}
@@ -210,6 +227,44 @@ function Slider({ min, max, value, onChange }: SliderProps) {
   );
 }
 
+interface EmotionMultiSelectProps {
+  options: string[];
+  selected: string[];
+  onChange: (selected: string[]) => void;
+}
+
+// Emotion-specific multi-select with emotion palette colors
+function EmotionMultiSelect({ options, selected, onChange }: EmotionMultiSelectProps) {
+  const toggleOption = (option: string) => {
+    if (selected.includes(option)) {
+      onChange(selected.filter(s => s !== option));
+    } else {
+      onChange([...selected, option]);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {options.map(option => {
+        const emotionColor = EMOTION_COLORS[option as keyof typeof EMOTION_COLORS] || '';
+        return (
+          <button
+            key={option}
+            onClick={() => toggleOption(option)}
+            className={`px-2 py-1 text-xs rounded border transition-colors ${
+              selected.includes(option)
+                ? emotionColor
+                : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            {option.replace('-', ' ')}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface MultiSelectProps {
   options: string[];
   selected: string[];
@@ -233,8 +288,8 @@ function MultiSelect({ options, selected, onChange }: MultiSelectProps) {
           onClick={() => toggleOption(option)}
           className={`px-2 py-1 text-xs rounded border transition-colors ${
             selected.includes(option)
-              ? 'bg-blue-100 text-blue-800 border-blue-300'
-              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+              ? 'bg-accent/10 text-accent border-accent/30'
+              : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
           }`}
         >
           {option.replace('-', ' ')}
@@ -267,8 +322,8 @@ function ButtonGroup({ options, selected, onChange }: ButtonGroupProps) {
           onClick={() => toggleOption(option)}
           className={`px-2 py-1 text-xs rounded border transition-colors ${
             selected.includes(option)
-              ? 'bg-blue-100 text-blue-800 border-blue-300'
-              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+              ? 'bg-accent/10 text-accent border-accent/30'
+              : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
           }`}
         >
           {option}

@@ -1,4 +1,5 @@
 import { PhotoDetail } from '@/components/photo/PhotoDetail';
+import { Heading, Text } from '@/components/ui';
 import { createClient } from '@/lib/supabase/server';
 import type { Photo } from '@/types/photo';
 
@@ -16,8 +17,8 @@ export default async function PhotoPage({ params }: PhotoPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Photo Not Found</h1>
-          <p className="text-gray-600">The photo you're looking for doesn't exist.</p>
+          <Heading level={1} className="mb-2">Photo Not Found</Heading>
+          <Text variant="body">The photo you're looking for doesn't exist.</Text>
         </div>
       </div>
     );
