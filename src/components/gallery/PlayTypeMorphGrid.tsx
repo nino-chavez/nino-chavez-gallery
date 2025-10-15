@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { PLAY_TYPE_ICONS, MOTION } from '@/lib/motion-tokens';
 import type { Photo } from '@/types/photo';
@@ -41,10 +42,14 @@ export function PlayTypeMorphGrid({ photos, activePlayType, onPhotoClick }: Play
             >
               {/* Photo card */}
               <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3]">
-                <img
+                <Image
                   src={photo.image_url}
                   alt={photo.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                  quality={85}
                 />
 
                 {/* Play type badge */}

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Photo } from '@/types/photo';
 
 interface PhotoGridProps {
@@ -30,11 +31,15 @@ export function PhotoGrid({ photos, aspectRatio = 'landscape' }: PhotoGridProps)
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {photos.map(photo => (
         <div key={photo.id} className="group cursor-pointer">
-          <div className="relative overflow-hidden rounded-lg bg-gray-100">
-            <img
+          <div className={`relative overflow-hidden rounded-lg bg-gray-100 ${getAspectRatioClass()}`}>
+            <Image
               src={photo.image_url}
               alt={photo.title}
-              className={`w-full h-full object-cover ${getAspectRatioClass()} group-hover:scale-105 transition-transform duration-200`}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-200"
+              loading="lazy"
+              quality={85}
             />
 
             {/* Quality badges */}

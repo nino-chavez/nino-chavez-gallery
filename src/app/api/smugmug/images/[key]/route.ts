@@ -36,13 +36,22 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: exif,
-      meta: {
-        imageKey: key,
+    return NextResponse.json(
+      {
+        success: true,
+        data: exif,
+        meta: {
+          imageKey: key,
+        },
       },
-    });
+      {
+        headers: {
+          // Cache EXIF for 24h (static metadata, rarely changes)
+          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800',
+          'CDN-Cache-Control': 'max-age=86400',
+        },
+      }
+    );
   } catch (error) {
     console.error('[API] Failed to fetch image EXIF:', error);
     return NextResponse.json(

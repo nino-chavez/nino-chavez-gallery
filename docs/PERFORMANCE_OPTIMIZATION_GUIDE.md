@@ -1,6 +1,28 @@
 # Performance Optimization Guide
 **SmugMug API Loading & Enterprise-Grade Strategies**
 
+## 🎯 Quick Status Overview
+
+### ✅ Already Implemented (80%)
+- Server-side OAuth proxy with security
+- LRU cache with size limits (100 entries)
+- Retry logic with exponential backoff
+- Request deduplication & cancellation
+- Rate limit monitoring
+- **SWR client-side caching on portfolio page**
+- Virtual scrolling library installed
+
+### 🚀 High-Impact Next Steps (2 hours)
+1. **Add Cache-Control headers** (30 min) → 90% reduction in API calls
+2. **Next.js Image component** (1 hour) → 60% smaller images
+3. **Native lazy loading** (15 min) → 50% less initial load
+
+### 📊 Performance Targets
+- Time to First Byte: <200ms
+- First Contentful Paint: <1.5s
+- Largest Contentful Paint: <2.5s
+- Cache Hit Rate: >80%
+
 ---
 
 ## Table of Contents
@@ -22,18 +44,21 @@ Your codebase already includes several solid optimizations:
 
 | Feature | Location | Status |
 |---------|----------|--------|
-| Server-side OAuth proxy | `api/smugmug-proxy.ts` | ✅ Implemented |
-| LRU cache with size limits | `src/lib/cache/smugmug-cache.ts` | ✅ 100 entry max, 5-min cleanup |
-| Request timeout protection | `api/smugmug-proxy.ts:102-104` | ✅ 30s limit |
-| Retry with exponential backoff | `src/lib/smugmug/client.ts:77-140` | ✅ 3 attempts, no auth retry |
-| Request deduplication | `src/lib/smugmug/common.ts` | ✅ Prevents duplicate requests |
-| AbortSignal support | `src/lib/smugmug/client.ts:91` | ✅ Request cancellation |
-| Rate limit monitoring | `api/smugmug-proxy.ts:214-217` | ✅ Warns at <100 remaining |
+| Server-side OAuth proxy | [`api/smugmug-proxy.ts`](../api/smugmug-proxy.ts:1) | ✅ Implemented |
+| LRU cache with size limits | [`src/lib/cache/smugmug-cache.ts`](../src/lib/cache/smugmug-cache.ts:31) | ✅ 100 entry max, 5-min cleanup |
+| Request timeout protection | [`api/smugmug-proxy.ts:102-104`](../api/smugmug-proxy.ts:102) | ✅ 30s limit |
+| Retry with exponential backoff | [`src/lib/smugmug/client.ts:77-140`](../src/lib/smugmug/client.ts:77) | ✅ 3 attempts, no auth retry |
+| Request deduplication | [`src/lib/smugmug/common.ts`](../src/lib/smugmug/common.ts:1) | ✅ Prevents duplicate requests |
+| AbortSignal support | [`src/lib/smugmug/client.ts:91`](../src/lib/smugmug/client.ts:91) | ✅ Request cancellation |
+| Rate limit monitoring | [`api/smugmug-proxy.ts:214-217`](../api/smugmug-proxy.ts:214) | ✅ Warns at <100 remaining |
+| **SWR client-side caching** | [`src/app/portfolio/page.tsx:24-33`](../src/app/portfolio/page.tsx:24) | ✅ **Implemented with optimal config** |
+| Virtual scrolling dependency | [`package.json:39`](../package.json:39) | ✅ @tanstack/react-virtual installed |
 
 ### Cache Configuration
 
 ```typescript
 // Current TTL settings (src/lib/cache/smugmug-cache.ts:202-207)
+// ✅ Already implemented and properly configured
 export const CACHE_TTL = {
   albums: 24 * 60 * 60 * 1000,        // 24 hours
   images: 60 * 60 * 1000,             // 1 hour
@@ -41,6 +66,8 @@ export const CACHE_TTL = {
   searchIndex: 24 * 60 * 60 * 1000,   // 24 hours
 };
 ```
+
+**Status**: ✅ Fully implemented with LRU eviction and periodic cleanup.
 
 ---
 
@@ -226,12 +253,12 @@ export async function GET() {
 
 #### 2.2 SWR for Client-Side Caching
 
-**Problem**: Client re-fetches data on every page navigation.
+**Status**: ✅ **Already Implemented** in [`src/app/portfolio/page.tsx:24-33`](../src/app/portfolio/page.tsx:24)
 
-**Solution**: Use SWR (already in dependencies!) for client-side caching with revalidation.
+**Solution**: Portfolio page already uses SWR with optimal configuration:
 
 ```typescript
-// Update src/app/portfolio/page.tsx:23-39
+// ✅ Already implemented in src/app/portfolio/page.tsx:24-33
 'use client';
 
 import { useState } from 'react';
@@ -303,6 +330,8 @@ export const slowSWRConfig: SWRConfiguration = {
 ```
 
 **Impact**: Instant navigation between pages, background revalidation, 95% cache hit rate.
+
+**Next Steps**: Apply same SWR pattern to other data-fetching pages (album pages, search results).
 
 ---
 
@@ -2122,35 +2151,17 @@ module.exports = withPWA(nextConfig);
 
 ## Quick Wins
 
-### Do These First (4 changes, 2.5 hours total)
+### Do These First (3 changes, 2 hours total)
 
-These 4 changes will improve perceived performance by **70-80%** with minimal code changes:
+These 3 changes will improve perceived performance by **60-70%** with minimal code changes:
 
-#### 1. Add SWR to Portfolio Page (30 min)
+#### 1. ✅ SWR Already Implemented
 
-```typescript
-// src/app/portfolio/page.tsx:23-39
-import useSWR from 'swr';
+**Status**: ✅ Portfolio page already uses SWR with optimal configuration.
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+**Next Action**: Apply to remaining pages that fetch data (album pages, search).
 
-export default function PortfolioPage() {
-  const { data, isLoading } = useSWR(
-    '/api/gallery?portfolioWorthy=true',
-    fetcher,
-    { dedupingInterval: 60000 }
-  );
-
-  const photos = data?.photos || [];
-  // ...
-}
-```
-
-**Impact**: Instant navigation, 95% cache hit rate.
-
----
-
-#### 2. Add Cache-Control Headers (30 min)
+#### 2. Add Cache-Control Headers (30 min) - **High Priority**
 
 ```typescript
 // Add to all API routes in src/app/api/smugmug/
@@ -2163,9 +2174,11 @@ return NextResponse.json(data, {
 
 **Impact**: 90% reduction in redundant API calls.
 
+**Status**: ❌ Not implemented yet - **START HERE**
+
 ---
 
-#### 3. Replace `<img>` with `<Image>` (1 hour)
+#### 3. Replace `<img>` with `<Image>` (1 hour) - **High Priority**
 
 ```typescript
 // src/components/athlete/PhotoGrid.tsx:34
@@ -2183,9 +2196,11 @@ import Image from 'next/image';
 
 **Impact**: 40-60% image size reduction, automatic optimization.
 
+**Status**: ❌ Not implemented yet
+
 ---
 
-#### 4. Enable Native Lazy Loading (15 min)
+#### 4. Enable Native Lazy Loading (15 min) - **Quick Win**
 
 ```typescript
 // Add to all remaining <img> tags
@@ -2260,18 +2275,32 @@ Use the performance monitoring dashboard created earlier:
 
 ## Summary
 
-### Current State
-Your project already has solid foundations with OAuth proxy, LRU caching, retry logic, and request deduplication.
+### Current State (Updated)
+
+**Implemented Foundation (80% Complete)** ✅
+- OAuth proxy with security enhancements
+- LRU caching with size limits (100 entries)
+- Retry logic with exponential backoff
+- Request deduplication
+- AbortSignal support
+- Rate limit monitoring
+- **SWR client-side caching on portfolio page**
+- Virtual scrolling library installed
+
+**High-Impact Quick Wins Remaining** 🎯
+1. Add Cache-Control headers to API routes (30 min) - **90% impact**
+2. Replace `<img>` with Next.js `<Image>` (1 hour) - **60% impact**
+3. Enable native lazy loading (15 min) - **50% impact**
 
 ### Recommended Path
 
-**Week 1: Quick Wins**
-1. Implement SWR caching
-2. Add Cache-Control headers
-3. Switch to Next.js Image component
-4. Enable lazy loading
+**Week 1: Complete Quick Wins** (2 hours)
+1. ✅ ~~Implement SWR caching~~ (Already done!)
+2. 🎯 Add Cache-Control headers (30 min) - **START HERE**
+3. 🎯 Switch to Next.js Image component (1 hour)
+4. 🎯 Enable lazy loading (15 min)
 
-**Expected Impact**: 70-80% perceived performance improvement
+**Expected Impact**: 60-70% perceived performance improvement (from current state)
 
 **Week 2-3: Core Optimizations**
 1. Add virtual scrolling for large galleries
@@ -2315,4 +2344,112 @@ Your project already has solid foundations with OAuth proxy, LRU caching, retry 
 
 ---
 
-**Next Steps**: Start with Quick Wins, measure impact, then proceed to Week 2+ optimizations based on actual performance data.
+## 🎯 Implementation Checklist
+
+### Immediate Actions (Start Today - 2 hours)
+
+#### ✅ Step 1: Add Cache-Control Headers (30 min)
+```bash
+# Files to update:
+- src/app/api/smugmug/albums/route.ts
+- src/app/api/smugmug/albums/[key]/route.ts
+- src/app/api/gallery/route.ts
+- src/app/api/smugmug/images/[key]/route.ts
+```
+
+Add to all NextResponse.json() calls:
+```typescript
+headers: {
+  'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200'
+}
+```
+
+**Test**: Check Network tab, look for cache hits on repeat visits.
+
+---
+
+#### ✅ Step 2: Replace <img> with Next.js Image (1 hour)
+```bash
+# Components to update:
+- src/components/athlete/PhotoGrid.tsx
+- src/components/portfolio/QualityGradientGrid.tsx
+- src/components/gallery/PlayTypeMorphGrid.tsx
+- src/components/photo/PhotoCard.tsx (if exists)
+```
+
+Pattern:
+```typescript
+import Image from 'next/image';
+
+// Replace:
+<img src={photo.image_url} alt={photo.title} />
+
+// With:
+<Image
+  src={photo.image_url}
+  alt={photo.title}
+  width={800}
+  height={600}
+  loading="lazy"
+  quality={85}
+/>
+```
+
+**Test**: Check image requests are WebP/AVIF format.
+
+---
+
+#### ✅ Step 3: Enable Native Lazy Loading (15 min)
+For any remaining `<img>` tags that can't use Next.js Image:
+```typescript
+<img loading="lazy" decoding="async" ... />
+```
+
+**Test**: Scroll slowly, verify images load as they enter viewport.
+
+---
+
+### Week 2 Actions (4-6 hours)
+
+- [ ] Implement virtual scrolling for large galleries
+- [ ] Add BlurHash placeholders to photo metadata
+- [ ] Create Supabase performance indexes
+- [ ] Batch metadata requests for enrichment scripts
+
+### Week 3+ Actions (Advanced)
+
+- [ ] Adaptive quality loading based on network speed
+- [ ] Predictive prefetching
+- [ ] Service Worker for offline support
+- [ ] PWA setup with manifest.json
+
+---
+
+## 📈 How to Measure Success
+
+### Before Implementation
+```bash
+# Run Lighthouse audit
+npx lighthouse https://your-domain.vercel.app/portfolio --view
+```
+
+Record baseline scores:
+- Performance: ____
+- LCP: ____ms
+- CLS: ____
+
+### After Each Change
+1. Deploy to Vercel preview
+2. Run Lighthouse again
+3. Compare improvements
+4. Monitor Vercel Analytics for real user metrics
+
+### Success Criteria
+- Performance score: >90
+- LCP: <2.5s
+- Cache hit rate: >80%
+- SmugMug API usage: <50% of quota
+
+---
+
+**Next Steps**: Start with Cache-Control headers (30 min), deploy to preview, measure impact, then proceed to Next.js Image optimization.

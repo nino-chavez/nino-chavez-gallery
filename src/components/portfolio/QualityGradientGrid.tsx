@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import type { Photo } from '@/types/photo';
@@ -54,10 +55,14 @@ export function QualityGradientGrid({ photos, onPhotoClick }: QualityGradientGri
         >
           {/* Photo */}
           <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3]">
-            <img
+            <Image
               src={photo.image_url}
               alt={photo.title}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
+              loading="lazy"
+              quality={85}
             />
 
             {/* Quality badge appears on hover */}

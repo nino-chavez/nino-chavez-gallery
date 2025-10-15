@@ -5,6 +5,11 @@
  *   pnpm run sync:metadata --db=enrichment-gemini-production.db
  */
 
+// Load environment variables first
+import { config } from 'dotenv';
+import { resolve } from 'path';
+config({ path: resolve(process.cwd(), '.env.local') });
+
 import Database from 'better-sqlite3';
 import { createClient } from '@supabase/supabase-js';
 

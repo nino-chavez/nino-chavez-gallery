@@ -11,20 +11,29 @@ export async function GET() {
   try {
     const galleryData = await fetchGalleryData();
 
-    return NextResponse.json({
-      success: true,
-      username: process.env.SMUGMUG_USERNAME || 'ninochavez',
-      generatedAt: new Date().toISOString(),
-      totalAlbums: galleryData.albums.length,
-      totalPhotos: galleryData.totalImages,
-      albums: galleryData.albums.map(album => ({
-        albumKey: album.AlbumKey,
-        name: album.Title,
-        description: album.Description,
-        photoCount: album.TotalImageCount,
-        keywords: album.Keywords,
-      })),
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        username: process.env.SMUGMUG_USERNAME || 'ninochavez',
+        generatedAt: new Date().toISOString(),
+        totalAlbums: galleryData.albums.length,
+        totalPhotos: galleryData.totalImages,
+        albums: galleryData.albums.map(album => ({
+          albumKey: album.AlbumKey,
+          name: album.Title,
+          description: album.Description,
+          photoCount: album.TotalImageCount,
+          keywords: album.Keywords,
+        })),
+      },
+      {
+        headers: {
+          // Cache for 1h, serve stale up to 2h while revalidating
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+          'CDN-Cache-Control': 'max-age=3600',
+        },
+      }
+    );
   } catch (error) {
     console.error('[API] Error loading gallery:', error);
     return NextResponse.json(

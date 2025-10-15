@@ -26,14 +26,23 @@ export async function GET(
 
     const images = await fetchAlbumImages(key);
 
-    return NextResponse.json({
-      success: true,
-      data: images,
-      meta: {
-        albumKey: key,
-        totalImages: images.length,
+    return NextResponse.json(
+      {
+        success: true,
+        data: images,
+        meta: {
+          albumKey: key,
+          totalImages: images.length,
+        },
       },
-    });
+      {
+        headers: {
+          // Cache for 1h, serve stale up to 2h while revalidating
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+          'CDN-Cache-Control': 'max-age=3600',
+        },
+      }
+    );
   } catch (error) {
     console.error('[API] Failed to fetch album images:', error);
     return NextResponse.json(
