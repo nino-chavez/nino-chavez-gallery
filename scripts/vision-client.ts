@@ -341,7 +341,8 @@ async function analyzeWithGemini(
   }
   console.log(`    🔑 Using Gemini API key: ${apiKey.substring(0, 20)}...`);
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-pro' });
+  // Use Flash for higher rate limits (1500 RPD vs 50 RPD for Pro)
+  const model = genAI.getGenerativeModel({ model: 'models/gemini-flash-latest' });
 
   const prompt = buildPrompt(context, true); // Enable Phase 3 for Gemini Pro
 

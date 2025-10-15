@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
 import { QualityGradientGrid } from '@/components/portfolio/QualityGradientGrid';
 import { PlayTypeMorphGrid } from '@/components/gallery/PlayTypeMorphGrid';
 import { EmotionTimeline } from '@/components/interactions/EmotionTimeline';
@@ -11,32 +12,28 @@ import type { PhotoFilterState, Photo } from '@/types/photo';
 
 type ViewMode = 'grid' | 'quality' | 'timeline';
 
+// SWR fetcher function
+const fetcher = (url: string) => fetch(url).then(r => r.json());
+
 export default function PortfolioPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('quality');
   const [filters, setFilters] = useState<PhotoFilterState>({});
-  const [photos, setPhotos] = useState<Photo[]>([]);
   const [hoveredPhoto, setHoveredPhoto] = useState<Photo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
+  // Replace useEffect + fetch with SWR for instant navigation & caching
+  const { data, error, isLoading } = useSWR(
+    '/api/gallery?portfolioWorthy=true',
+    fetcher,
+    {
+      revalidateOnFocus: false,      // Don't refetch on window focus
+      revalidateOnReconnect: false,  // Don't refetch on network reconnect
+      dedupingInterval: 60000,       // Dedupe identical requests within 60s
+      revalidateIfStale: true,       // Revalidate stale data in background
+    }
+  );
+
+  const photos = data?.photos || [];
   const filteredPhotos = usePhotoFilters(photos, filters);
-
-  useEffect(() => {
-    // Fetch portfolio-worthy photos from API
-    const fetchPhotos = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/gallery?portfolioWorthy=true');
-        const data = await response.json();
-        setPhotos(data.photos || []);
-      } catch (error) {
-        console.error('Error fetching photos:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPhotos();
-  }, []);
 
   return (
     <div className="portfolio-page min-h-screen bg-white">
@@ -132,9 +129,12 @@ export default function PortfolioPage() {
             />
           )}
           {viewMode === 'timeline' && (
-            <EmotionTimeline 
-              photos={filteredPhotos} 
-              onPhotoSetChange={setPhotos} 
+            <EmotionTimeline
+              photos={filteredPhotos}
+              onPhotoSetChange={(filtered) => {
+                // Timeline filtering handled by EmotionTimeline internally
+                console.log('Timeline showing', filtered.length, 'photos');
+              }}
             />
           )}
         </div>
