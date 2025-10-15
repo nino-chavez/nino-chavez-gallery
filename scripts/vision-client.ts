@@ -329,20 +329,24 @@ async function analyzeWithOpenAI(
 }
 
 /**
- * Analyze with Gemini Flash (COST-OPTIMIZED)
+ * Analyze with Gemini (supports Flash and Pro models)
  */
 async function analyzeWithGemini(
   imageUrl: string,
-  context: VisionContext
+  context: VisionContext,
+  modelName?: string
 ): Promise<VisionAnalysisResult> {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     throw new Error('GOOGLE_API_KEY not found in environment');
   }
-  console.log(`    🔑 Using Gemini API key: ${apiKey.substring(0, 20)}...`);
+  
+  // Use explicit model or default to Flash 1.5 (NOT latest which may resolve to Pro!)
+  const geminiModel = modelName || process.env.GEMINI_MODEL || 'models/gemini-1.5-flash-002';
+  console.log(`    🤖 Using Gemini model: ${geminiModel}`);
+  
   const genAI = new GoogleGenerativeAI(apiKey);
-  // Use Flash for higher rate limits (1500 RPD vs 50 RPD for Pro)
-  const model = genAI.getGenerativeModel({ model: 'models/gemini-flash-latest' });
+  const model = genAI.getGenerativeModel({ model: geminiModel });
 
   const prompt = buildPrompt(context, true); // Enable Phase 3 for Gemini Pro
 
@@ -362,8 +366,36 @@ async function analyzeWithGemini(
       }
     };
   } else if (imageUrl.startsWith('http')) {
+    // Cost optimization: Use smaller SmugMug images for metadata extraction
+    let optimizedUrl = imageUrl;
+    const targetSize = process.env.SMUGMUG_IMAGE_SIZE || 'M'; // Default to Medium
+    
+    if (imageUrl.includes('smugmug.com')) {
+      // SmugMug URL pattern: .../SIZE/filename-SIZE.jpg
+      // Replace Display/Original with Medium for massive cost savings
+      const sizePattern = /\/(O|D|X5|X4|X3|XL|L|M|S|Ti)\//;
+      const filePattern = /-(O|D|X5|X4|X3|XL|L|M|S|Ti)\.(jpg|jpeg|png)$/i;
+      
+      if (sizePattern.test(imageUrl) || filePattern.test(imageUrl)) {
+        const originalSize = imageUrl.match(sizePattern)?.[1] || imageUrl.match(filePattern)?.[1];
+        
+        // Only downsize if using larger than target
+        const sizeOrder = ['Ti', 'S', 'M', 'L', 'XL', 'X3', 'X4', 'X5', 'D', 'O'];
+        const currentIdx = sizeOrder.indexOf(originalSize || 'D');
+        const targetIdx = sizeOrder.indexOf(targetSize);
+        
+        if (currentIdx > targetIdx) {
+          optimizedUrl = imageUrl
+            .replace(sizePattern, `/${targetSize}/`)
+            .replace(filePattern, `-${targetSize}.$2`);
+          
+          console.log(`    📉 Image size optimized: ${originalSize} → ${targetSize} (cost savings!)`);
+        }
+      }
+    }
+    
     // External URL - fetch and convert
-    const response = await fetch(imageUrl);
+    const response = await fetch(optimizedUrl);
 
     // Validate content type BEFORE processing
     const contentType = response.headers.get('content-type') || '';
@@ -372,6 +404,13 @@ async function analyzeWithGemini(
     }
 
     const buffer = await response.arrayBuffer();
+    const sizeInMB = buffer.byteLength / 1024 / 1024;
+    
+    // Warn if image is still very large
+    if (sizeInMB > 5) {
+      console.log(`    ⚠️  Large image: ${sizeInMB.toFixed(1)}MB - consider using smaller size for cost optimization`);
+    }
+    
     const base64 = Buffer.from(buffer).toString('base64');
 
     const mimeType = contentType.startsWith('image/') ? contentType : `image/${contentType}`;
@@ -397,21 +436,39 @@ async function analyzeWithGemini(
 
   const metadata = JSON.parse(jsonMatch[0]);
 
-  // Calculate cost (Gemini Pro pricing)
+  // Calculate cost based on actual model pricing
   const inputTokens = result.response.usageMetadata?.promptTokenCount || 0;
   const outputTokens = result.response.usageMetadata?.candidatesTokenCount || 0;
-  const inputCost = (inputTokens / 1_000_000) * 0.075; // $0.075 per 1M input tokens
-  const outputCost = (outputTokens / 1_000_000) * 0.30; // $0.30 per 1M output tokens
+  
+  // Determine pricing based on model
+  let inputRate, outputRate;
+  if (geminiModel.includes('2.5-pro') || geminiModel.includes('pro-002')) {
+    // Gemini 2.5 Pro pricing (prompts up to 128K)
+    inputRate = 1.25;
+    outputRate = 5.00;
+  } else if (geminiModel.includes('1.5-pro')) {
+    // Gemini 1.5 Pro pricing
+    inputRate = 1.25;
+    outputRate = 5.00;
+  } else {
+    // Gemini Flash pricing (1.5-flash, 2.0-flash, etc.)
+    inputRate = 0.075;
+    outputRate = 0.30;
+  }
+  
+  const inputCost = (inputTokens / 1_000_000) * inputRate;
+  const outputCost = (outputTokens / 1_000_000) * outputRate;
   const cost = inputCost + outputCost;
 
   // Clear image buffer to prevent memory accumulation
   imageData.inlineData.data = '';
 
-  // Return metadata as-is (includes Phase 3 if prompt requested it)
+  // Return metadata with model info
   return {
     ...metadata,
     provider: 'gemini',
     cost,
+    model: geminiModel, // Include actual model used
   };
 }
 
@@ -421,7 +478,8 @@ async function analyzeWithGemini(
 export async function analyzePhoto(
   imageUrl: string,
   context: VisionContext,
-  providerOverride?: 'claude' | 'openai' | 'gemini'
+  providerOverride?: 'claude' | 'openai' | 'gemini',
+  geminiModel?: string
 ): Promise<VisionAnalysisResult> {
   const provider = providerOverride || detectProvider();
 
@@ -434,7 +492,7 @@ export async function analyzePhoto(
       case 'openai':
         return await analyzeWithOpenAI(imageUrl, context);
       case 'gemini':
-        return await analyzeWithGemini(imageUrl, context);
+        return await analyzeWithGemini(imageUrl, context, geminiModel);
       default:
         throw new Error(`Unknown provider: ${provider}`);
     }
@@ -452,15 +510,48 @@ export async function analyzePhoto(
 }
 
 /**
- * Get cost estimate for batch
+ * Get cost estimate for batch with accurate Gemini pricing
  */
-export function estimateCost(photoCount: number, provider?: 'claude' | 'openai' | 'gemini'): number {
+export function estimateCost(
+  photoCount: number,
+  provider?: 'claude' | 'openai' | 'gemini',
+  geminiModel?: string
+): number {
   const activeProvider = provider || detectProvider();
+
+  if (activeProvider === 'gemini') {
+    const model = geminiModel || process.env.GEMINI_MODEL || 'models/gemini-1.5-flash-002';
+    
+    // Realistic token usage for vision analysis:
+    // - Input: ~15,000-20,000 tokens (large base64 image + detailed prompt)
+    // - Output: ~1,000-1,500 tokens (comprehensive JSON metadata)
+    // Using conservative estimates for accuracy
+    
+    const avgInputTokens = 18000;
+    const avgOutputTokens = 1200;
+    
+    let inputRate, outputRate;
+    if (model.includes('2.5-pro') || model.includes('pro-002') || model.includes('1.5-pro')) {
+      // Gemini Pro pricing
+      inputRate = 1.25;
+      outputRate = 5.00;
+    } else {
+      // Gemini Flash pricing
+      inputRate = 0.075;
+      outputRate = 0.30;
+    }
+    
+    const inputCost = (avgInputTokens / 1_000_000) * inputRate;
+    const outputCost = (avgOutputTokens / 1_000_000) * outputRate;
+    const costPerPhoto = inputCost + outputCost;
+    
+    return photoCount * costPerPhoto;
+  }
 
   const costs = {
     claude: 0.0036,  // ~$3.60 per 1,000 photos (Sonnet 4)
     openai: 0.01,    // ~$10 per 1,000 photos (GPT-4o)
-    gemini: 0.001,   // ~$1 per 1,000 photos (Gemini Flash)
+    gemini: 0.00015, // ~$0.15 per 1,000 photos (Gemini Flash default)
   };
 
   return photoCount * costs[activeProvider];
@@ -469,8 +560,16 @@ export function estimateCost(photoCount: number, provider?: 'claude' | 'openai' 
 /**
  * Get provider name for display
  */
-export function getProviderName(): string {
+export function getProviderName(geminiModel?: string): string {
   const provider = detectProvider();
+
+  if (provider === 'gemini') {
+    const model = geminiModel || process.env.GEMINI_MODEL || 'models/gemini-1.5-flash-002';
+    if (model.includes('2.5-pro')) return 'Gemini 2.5 Pro (Google)';
+    if (model.includes('1.5-pro')) return 'Gemini 1.5 Pro (Google)';
+    if (model.includes('2.0-flash')) return 'Gemini 2.0 Flash (Google)';
+    return 'Gemini 1.5 Flash (Google)';
+  }
 
   const names = {
     claude: 'Claude Sonnet 4 (Anthropic)',

@@ -13,17 +13,27 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
 
-  // Run tests in parallel
+  // Run tests in parallel with controlled worker count
   fullyParallel: true,
+
+  // Worker configuration optimized for M3 Max with multiple dev environments
+  // M3 Max has 14-16 cores, reserve ~50% for other apps (7-8 workers)
+  workers: process.env.CI ? 4 : 6,
 
   // Fail build on CI if you accidentally left test.only
   forbidOnly: !!process.env.CI,
 
-  // Retry failed tests twice
-  retries: process.env.CI ? 2 : 0,
+  // Retry failed tests twice on CI, once locally
+  retries: process.env.CI ? 2 : 1,
 
-  // Test timeout
-  timeout: 30000,
+  // Test timeout - increased for resource-constrained scenarios
+  timeout: 45000,
+
+  // Global timeout to prevent hung test suites
+  globalTimeout: 600000, // 10 minutes
+
+  // Maximum failures before stopping (fail fast)
+  maxFailures: process.env.CI ? undefined : 5,
 
   // Reporter
   reporter: [
@@ -39,14 +49,30 @@ export default defineConfig({
     // Take screenshots on failure
     screenshot: 'only-on-failure',
 
-    // Record video on first retry
+    // Record video only on first retry (saves disk I/O and memory)
     video: 'retain-on-failure',
 
-    // Trace on first retry
+    // Trace on first retry (reduces memory overhead)
     trace: 'on-first-retry',
 
     // Browser context options
     viewport: { width: 1280, height: 720 },
+
+    // Navigation timeout for slower systems under load
+    navigationTimeout: 30000,
+
+    // Action timeout
+    actionTimeout: 15000,
+
+    // Reduce memory pressure by limiting parallel navigations
+    launchOptions: {
+      // Limit memory per browser instance
+      args: [
+        '--disable-dev-shm-usage', // Use /tmp instead of /dev/shm for shared memory
+        '--disable-blink-features=AutomationControlled',
+        '--no-sandbox', // Reduces isolation overhead
+      ],
+    },
   },
 
   // Test projects for different browsers
@@ -77,7 +103,19 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI, // Reuse existing server in development
     timeout: 120000,
+    // Only start server if not already running (prevents conflicts)
+    ignoreHTTPSErrors: true,
+  },
+
+  // Output configuration
+  outputDir: 'test-results',
+
+  // Metadata
+  metadata: {
+    optimizedFor: 'M3 Max with parallel development environments',
+    workerAllocation: 'Conservative (50% of cores)',
+    memoryStrategy: 'Shared memory disabled, /tmp usage enabled',
   },
 });

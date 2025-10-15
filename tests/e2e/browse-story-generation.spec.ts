@@ -40,7 +40,8 @@ test.describe('Browse Page - Story Generation Integration', () => {
 
     // Modal should be visible with title
     await expect(page.locator('h2', { hasText: 'Generate Story' })).toBeVisible();
-    await expect(page.locator('text=Browse Gallery')).toBeVisible(); // Context name
+    // Modal context name (be more specific to avoid strict mode violation)
+    await expect(page.locator('p.text-sm.text-gray-600', { hasText: 'Browse Gallery' })).toBeVisible();
   });
 
   /**

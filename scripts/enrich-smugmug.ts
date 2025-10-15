@@ -3,7 +3,8 @@
  * SmugMug Collection Enrichment Script with SQLite State Management
  *
  * Usage:
- *   pnpm run enrich:smugmug --model=gemini --concurrency=2 --run-name=production
+ *   pnpm run enrich:smugmug --model=gemini --gemini-model=models/gemini-1.5-flash-002 --concurrency=2 --run-name=production
+ *   pnpm run enrich:smugmug --model=gemini --gemini-model=models/gemini-2.5-pro-002 --concurrency=2 --cost-cap=300
  *   pnpm run enrich:smugmug --model=claude --age-filter="<24months" --concurrency=50
  *   pnpm run enrich:smugmug --model=gemini --limit=10 --run-name=test
  *   pnpm run enrich:smugmug --validate-only
@@ -11,6 +12,7 @@
  *
  * Options:
  *   --model=<claude|gemini>          AI model to use
+ *   --gemini-model=<model-name>      Explicit Gemini model (e.g., models/gemini-1.5-flash-002, models/gemini-2.5-pro-002)
  *   --age-filter=<"<24months"|">24months">  Filter photos by age
  *   --concurrency=<number>           Number of parallel requests (default: 50)
  *   --limit=<number>                 Limit number of photos to process
@@ -34,6 +36,7 @@ import chalk from 'chalk';
 // Configuration
 interface Config {
   model: 'claude' | 'gemini';
+  geminiModel?: string;
   ageFilter: '<24months' | '>24months';
   concurrency: number;
   dryRun: boolean;
@@ -56,6 +59,9 @@ function parseArgs(): Config {
 
   const modelArg = args.find(arg => arg.startsWith('--model='));
   if (modelArg) config.model = modelArg.split('=')[1] as 'claude' | 'gemini';
+
+  const geminiModelArg = args.find(arg => arg.startsWith('--gemini-model='));
+  if (geminiModelArg) config.geminiModel = geminiModelArg.split('=')[1].replace(/["']/g, '');
 
   const ageArg = args.find(arg => arg.startsWith('--age-filter='));
   if (ageArg) config.ageFilter = ageArg.split('=')[1].replace(/["']/g, '') as any;
@@ -159,13 +165,19 @@ async function validateAndInitialize(config: Config, db: Database.Database) {
     console.log(chalk.yellow(`\n   ⚠️  Limit applied: processing only ${photosToProcess} photos`));
   }
 
-  const costPerPhoto = config.model === 'claude' ? 0.0036 : 0.001;
-  const estimatedCost = photosToProcess * costPerPhoto;
+  // Get accurate cost estimate using the vision client's pricing
+  const { estimateCost, getProviderName } = await import('./vision-client.js');
+  const estimatedCost = estimateCost(photosToProcess, config.model, config.geminiModel);
+  const costPerPhoto = estimatedCost / photosToProcess;
   const estimatedTime = photosToProcess / 1500;
+  const modelName = getProviderName(config.geminiModel);
 
-  console.log(`\n   Model: ${config.model === 'claude' ? 'Claude Sonnet 4' : 'Gemini Flash'}`);
-  console.log(`   Cost per photo: $${costPerPhoto.toFixed(4)}`);
-  console.log(`   Estimated cost: $${estimatedCost.toFixed(2)}`);
+  console.log(`\n   Model: ${modelName}`);
+  if (config.model === 'gemini' && config.geminiModel) {
+    console.log(chalk.cyan(`   Gemini Model: ${config.geminiModel}`));
+  }
+  console.log(`   Cost per photo: $${costPerPhoto.toFixed(6)}`);
+  console.log(chalk.bold(`   Estimated cost: $${estimatedCost.toFixed(2)}`));
   console.log(`   Estimated time: ${estimatedTime.toFixed(1)} hours`);
 
   if (estimatedCost > config.costCap) {
@@ -267,7 +279,8 @@ async function enrichPhoto(
           eventName: photo.album_name,
           albumName: photo.album_name,
         },
-        config.model // Pass the model parameter
+        config.model, // Pass the model parameter
+        config.geminiModel // Pass the explicit Gemini model if specified
       );
       cost = result.cost;
     }
@@ -324,7 +337,14 @@ async function main() {
   const startTime = new Date();
 
   console.log(chalk.bold.cyan('\n🚀 SmugMug Collection Enrichment\n'));
-  console.log(`   Model: ${config.model === 'claude' ? 'Claude Sonnet 4' : 'Gemini Flash'}`);
+  console.log(`   Provider: ${config.model}`);
+  if (config.model === 'gemini') {
+    const geminiModel = config.geminiModel || process.env.GEMINI_MODEL || 'models/gemini-1.5-flash-002';
+    console.log(chalk.bold.yellow(`   Gemini Model: ${geminiModel}`));
+    if (!config.geminiModel && !process.env.GEMINI_MODEL) {
+      console.log(chalk.yellow(`   ⚠️  Using default Flash model. Use --gemini-model to specify Pro or other models.`));
+    }
+  }
   console.log(`   Age filter: ${config.ageFilter}`);
   console.log(`   Concurrency: ${config.concurrency}`);
   console.log(`   Dry run: ${config.dryRun ? 'Yes' : 'No'}`);
