@@ -93,16 +93,18 @@ function buildPrompt(context: VisionContext, includePhase3 = true): string {
     venueHint = '\n- Venue: Beach/sand';
   }
 
-  const basePrompt = `Analyze this ${context.sport} photo from "${context.eventName || context.albumName}".
+  const basePrompt = `Analyze this photo from "${context.eventName || context.albumName}".
 
 Context:
-- Sport: ${context.sport}
+- Expected Type: ${context.sport} (but analyze what you actually see)
 - Event: ${context.eventName || context.albumName || 'Unknown'}${venueHint}
 ${context.location ? `- Location: ${context.location}` : ''}
 ${context.date ? `- Date: ${context.date.toLocaleDateString()}` : ''}
 ${context.cameraInfo ? `- Camera: ${context.cameraInfo}` : ''}
 ${context.existingTitle ? `- Current title: ${context.existingTitle}` : ''}
 ${context.existingKeywords?.length ? `- Existing keywords: ${context.existingKeywords.join(', ')}` : ''}
+
+⚠️  IMPORTANT: If this is NOT a sports photo (e.g., memorial, ceremony, portrait, venue shot), still generate metadata but set playType=null and adjust fields appropriately.
 
 Generate rich metadata in this exact JSON format:
 
@@ -134,17 +136,18 @@ Generate rich metadata in this exact JSON format:
 }
 
 Requirements:
-- Title must be action-focused and exciting
+- Title must be descriptive and capture the essence (action-focused if sports, descriptive if not)
 - Caption must tell the story of this moment
 - Keep best existing keywords, add new ones
 - tier3 MUST use colon format (key:value)
-- Be specific to what you actually see in the image
+- Be specific to what you actually see in the image - ALWAYS generate JSON even for non-sports photos
 - Focus on photography composition and technical excellence${includePhase3 ? `
 - Quality scores: Be objective about sharpness, exposure, composition
-- Use modern volleyball terms: "attack" not "spike", "pass" for serve-receive
-- actionIntensity: "peak" for game-deciding moments with visible emotion
+- For sports: Use modern volleyball terms ("attack" not "spike", "pass" for serve-receive)
+- For non-sports: Set playType=null, adjust actionIntensity appropriately (low for static scenes)
+- actionIntensity: "peak" for decisive moments, "low" for portraits/static scenes
 - useCases: Consider image aspect ratio, subject positioning, visual impact
-- portfolioWorthy: Reserve for 9+ scores across quality metrics` : ''}`;
+- portfolioWorthy: Reserve for exceptional shots regardless of subject type` : ''}`;
 
   return basePrompt;
 }
@@ -265,6 +268,11 @@ async function analyzeWithClaude(
   const outputCost = (outputTokens / 1_000_000) * 15; // $15 per 1M output tokens
   const cost = inputCost + outputCost;
 
+  // Clear image buffer to prevent memory accumulation
+  if (imageSource.type === 'base64') {
+    imageSource.data = '';
+  }
+
   return {
     ...metadata,
     provider: 'claude',
@@ -327,10 +335,15 @@ async function analyzeWithGemini(
   imageUrl: string,
   context: VisionContext
 ): Promise<VisionAnalysisResult> {
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('GOOGLE_API_KEY not found in environment');
+  }
+  console.log(`    🔑 Using Gemini API key: ${apiKey.substring(0, 20)}...`);
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-pro' });
 
-  const prompt = buildPrompt(context, false); // No Phase 3 for Gemini
+  const prompt = buildPrompt(context, true); // Enable Phase 3 for Gemini Pro
 
   // Gemini expects base64 image data
   let imageData: {inlineData: {data: string; mimeType: string}};
@@ -350,10 +363,16 @@ async function analyzeWithGemini(
   } else if (imageUrl.startsWith('http')) {
     // External URL - fetch and convert
     const response = await fetch(imageUrl);
+
+    // Validate content type BEFORE processing
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.startsWith('image/')) {
+      throw new Error(`Invalid image URL: received ${contentType} instead of image. URL may be broken or require authentication.`);
+    }
+
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
 
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
     const mimeType = contentType.startsWith('image/') ? contentType : `image/${contentType}`;
 
     imageData = {
@@ -377,36 +396,33 @@ async function analyzeWithGemini(
 
   const metadata = JSON.parse(jsonMatch[0]);
 
-  // Calculate cost (Gemini Flash pricing)
+  // Calculate cost (Gemini Pro pricing)
   const inputTokens = result.response.usageMetadata?.promptTokenCount || 0;
   const outputTokens = result.response.usageMetadata?.candidatesTokenCount || 0;
   const inputCost = (inputTokens / 1_000_000) * 0.075; // $0.075 per 1M input tokens
   const outputCost = (outputTokens / 1_000_000) * 0.30; // $0.30 per 1M output tokens
   const cost = inputCost + outputCost;
 
-  // Add default Phase 3 values (null/undefined for Gemini)
+  // Clear image buffer to prevent memory accumulation
+  imageData.inlineData.data = '';
+
+  // Return metadata as-is (includes Phase 3 if prompt requested it)
   return {
     ...metadata,
-    quality: undefined,
-    portfolioWorthy: false,
-    printReady: false,
-    useCases: [],
-    socialMediaOptimized: false,
-    playType: null,
-    actionIntensity: 'medium' as const,
     provider: 'gemini',
     cost,
   };
 }
 
 /**
- * Main analysis function - auto-selects provider
+ * Main analysis function - auto-selects provider or uses override
  */
 export async function analyzePhoto(
   imageUrl: string,
-  context: VisionContext
+  context: VisionContext,
+  providerOverride?: 'claude' | 'openai' | 'gemini'
 ): Promise<VisionAnalysisResult> {
-  const provider = detectProvider();
+  const provider = providerOverride || detectProvider();
 
   console.log(`    🤖 Using provider: ${provider}`);
 
