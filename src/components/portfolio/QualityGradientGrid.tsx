@@ -41,79 +41,36 @@ export function QualityGradientGrid({ photos, onPhotoClick }: QualityGradientGri
   }, [photos]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 max-w-7xl mx-auto px-6 pb-12">
       {photos.map((photo, i) => (
-        <div
+        <motion.div
           key={photo.id}
-          className="quality-photo-card relative group cursor-pointer"
-          style={{
-            // @ts-ignore - CSS custom properties
-            filter: 'brightness(var(--quality-brightness, 1)) blur(var(--quality-blur, 0px))',
-            transition: 'filter 0.3s ease-out',
-          }}
+          className="relative group cursor-pointer overflow-hidden bg-black"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: i * 0.02 }}
           onClick={() => onPhotoClick?.(photo)}
         >
-          {/* Photo */}
-          <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3]">
+          {/* Photo - Minimal */}
+          <div className="relative aspect-square">
             <Image
               src={photo.image_url}
               alt={photo.title}
               fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className="object-cover group-hover:scale-110 transition-transform duration-500"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover group-hover:opacity-90 transition-opacity duration-200"
               loading="lazy"
-              quality={85}
+              quality={90}
             />
 
-            {/* Quality badge appears on hover */}
-            <motion.div
-              className="absolute top-4 right-4 bg-black/80 text-white px-3 py-2 rounded-full"
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileHover={{ opacity: 1, scale: 1 }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-12 h-12 rounded-full border-4 border-white/20 relative">
-                  <svg className="absolute inset-0 -rotate-90" viewBox="0 0 36 36">
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="16"
-                      fill="none"
-                      stroke="white"
-                      strokeWidth="4"
-                      strokeDasharray={`${calculateAverageQuality(photo.metadata) * 10}, 100`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">
-                    {calculateAverageQuality(photo.metadata).toFixed(1)}
-                  </div>
-                </div>
+            {/* Minimal quality indicator on hover */}
+            {photo.metadata?.portfolio_worthy && (
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="w-2 h-2 bg-white rounded-full" />
               </div>
-            </motion.div>
-
-            {/* Quality breakdown on hover */}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="text-white text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span>Sharpness</span>
-                  <span>{photo.metadata?.sharpness || 0}/10</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Exposure</span>
-                  <span>{photo.metadata?.exposure_accuracy || 0}/10</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Composition</span>
-                  <span>{photo.metadata?.composition_score || 0}/10</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Emotion</span>
-                  <span>{photo.metadata?.emotional_impact || 0}/10</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-        </div>
+        </motion.div>
       ))}
     </div>
   );

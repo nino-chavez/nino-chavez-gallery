@@ -6,7 +6,7 @@
 export const MOTION = {
   spring: {
     gentle: { type: 'spring' as const, stiffness: 120, damping: 14 },
-    responsive: { type: 'spring' as const, stiffness: 300, damping: 30 },
+    responsive: { type: 'spring' as const, stiffness: 300, damping: 25 },
     snappy: { type: 'spring' as const, stiffness: 400, damping: 25 },
   },
 

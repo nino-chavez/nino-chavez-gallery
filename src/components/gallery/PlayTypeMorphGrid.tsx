@@ -22,7 +22,7 @@ export function PlayTypeMorphGrid({ photos, activePlayType, onPhotoClick }: Play
     <LayoutGroup>
       <motion.div
         layout
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-8 pb-12"
       >
         <AnimatePresence mode="popLayout">
           {visiblePhotos.map(photo => (
@@ -37,59 +37,71 @@ export function PlayTypeMorphGrid({ photos, activePlayType, onPhotoClick }: Play
                 opacity: { duration: MOTION.duration.fast },
                 scale: { duration: MOTION.duration.fast },
               }}
-              className="relative group cursor-pointer"
+              className="card-base hover-lift relative group cursor-pointer"
               onClick={() => onPhotoClick?.(photo)}
             >
               {/* Photo card */}
-              <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3]">
+              <div className="relative overflow-hidden rounded-xl aspect-[4/3]">
                 <Image
                   src={photo.image_url}
                   alt={photo.title}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                   quality={85}
                 />
 
-                {/* Play type badge */}
+                {/* Play type badge - clean design */}
                 {photo.metadata?.play_type && (
                   <motion.div
-                    className="absolute top-2 right-2 bg-black text-white px-3 py-1 rounded-full text-sm flex items-center gap-1"
+                    className="absolute top-3 right-3 bg-white shadow-md px-3 py-1.5 rounded-full text-sm flex items-center gap-2"
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <span className="text-base">
+                    <span className="text-lg">
                       {PLAY_TYPE_ICONS[photo.metadata.play_type as keyof typeof PLAY_TYPE_ICONS]}
                     </span>
-                    <span className="capitalize">{photo.metadata.play_type}</span>
+                    <span className="capitalize font-medium text-gray-900">{photo.metadata.play_type}</span>
                   </motion.div>
                 )}
 
-                {/* Quality indicators */}
-                <div className="absolute top-2 left-2 flex gap-1">
+                {/* Quality indicators - clean badges */}
+                <div className="absolute top-3 left-3 flex gap-2">
                   {photo.metadata?.portfolio_worthy && (
-                    <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">⭐</span>
+                    <span className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-md">
+                      ⭐ Portfolio
+                    </span>
                   )}
                   {photo.metadata?.action_intensity === 'peak' && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded">⚡</span>
+                    <span className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-md">
+                      ⚡ Peak
+                    </span>
                   )}
                 </div>
 
-                {/* Hover overlay with metadata */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-center p-4">
-                    <div className="text-lg font-bold mb-2">{photo.title}</div>
+                {/* Hover overlay with metadata - clean design */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center p-6">
+                  <div className="text-white text-center w-full">
+                    <div className="text-xl font-bold mb-3">{photo.title}</div>
                     {photo.metadata && (
-                      <div className="text-sm space-y-1">
-                        <div className="capitalize">{photo.metadata.emotion}</div>
-                        <div>Quality: {(
-                          (photo.metadata.sharpness || 0) +
-                          (photo.metadata.exposure_accuracy || 0) +
-                          (photo.metadata.composition_score || 0) +
-                          (photo.metadata.emotional_impact || 0)
-                        ) / 4 | 0}/10</div>
+                      <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 space-y-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-gray-600 text-sm font-medium">Emotion:</span>
+                          <span className="capitalize text-gray-900 font-semibold">{photo.metadata.emotion}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-gray-600 text-sm font-medium">Quality:</span>
+                          <span className="text-gray-900 font-bold text-lg">
+                            {(
+                              (photo.metadata.sharpness || 0) +
+                              (photo.metadata.exposure_accuracy || 0) +
+                              (photo.metadata.composition_score || 0) +
+                              (photo.metadata.emotional_impact || 0)
+                            ) / 4 | 0}/10
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  * - Performance characteristics
  */
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './tests',
 
   // Run tests in parallel
   fullyParallel: true,

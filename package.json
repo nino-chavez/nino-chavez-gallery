@@ -18,7 +18,12 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "echo \"No tests yet\"",
+    "test": "playwright test",
+    "test:visual": "playwright test tests/visual-verification",
+    "test:visual:update": "playwright test tests/visual-verification --update-snapshots",
+    "test:visual:ui": "playwright test tests/visual-verification --ui",
+    "test:journey": "playwright test tests/user-journeys",
+    "test:all": "pnpm run test:visual && pnpm run test:journey",
     "clean": "rm -rf .next out node_modules/.cache"
   },
   "dependencies": {
@@ -43,6 +48,7 @@
     "@use-gesture/react": "^10.3.1",
     "@vercel/node": "^5.3.26",
     "better-sqlite3": "^12.4.1",
+    "blurhash": "^2.0.5",
     "canvas-confetti": "^1.9.3",
     "chalk": "^5.6.2",
     "cli-progress": "^3.12.0",

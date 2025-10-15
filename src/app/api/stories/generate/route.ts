@@ -26,9 +26,12 @@ export async function POST(request: NextRequest) {
       photos = await fetchPlayerPhotos(supabase, context.playerId);
     } else if (context.seasonId) {
       photos = await fetchSeasonPhotos(supabase, context.seasonId);
+    } else if (context.browseId) {
+      // Handle browse context - fetch all photos
+      photos = await fetchBrowsePhotos(supabase);
     } else {
       return NextResponse.json(
-        { error: 'Missing context (gameId, playerId, or seasonId required)' },
+        { error: 'Missing context (gameId, playerId, seasonId, or browseId required)' },
         { status: 400 }
       );
     }
@@ -41,10 +44,10 @@ export async function POST(request: NextRequest) {
         story = detectGameWinningRally(photos, context);
         break;
       case 'player-highlight':
-        story = detectPlayerHighlightReel(photos, context.playerId, context.playerName);
+        story = detectPlayerHighlightReel(photos, context.playerId || context.browseId, context.playerName || context.browseName);
         break;
       case 'season-journey':
-        story = detectSeasonJourney(photos, context.seasonId, context.seasonName);
+        story = detectSeasonJourney(photos, context.seasonId || context.browseId, context.seasonName || context.browseName);
         break;
       case 'comeback-story':
         story = detectComebackStory(photos, context);
@@ -90,7 +93,7 @@ async function fetchGamePhotos(supabase: any, gameId: string): Promise<Photo[]> 
     .order('enriched_at');
 
   if (error) throw error;
-  
+
   // Transform to Photo type
   return data.map((item: any) => ({
     id: item.photo_id,
@@ -130,7 +133,7 @@ async function fetchPlayerPhotos(supabase: any, playerId: string): Promise<Photo
     .order('enriched_at');
 
   if (error) throw error;
-  
+
   return data.map((item: any) => ({
     id: item.photo_id,
     image_key: item.image_key,
@@ -168,7 +171,48 @@ async function fetchSeasonPhotos(supabase: any, seasonId: string): Promise<Photo
     .order('enriched_at');
 
   if (error) throw error;
-  
+
+  return data.map((item: any) => ({
+    id: item.photo_id,
+    image_key: item.image_key,
+    image_url: `/api/smugmug/images/${item.image_key}`,
+    title: '',
+    caption: '',
+    keywords: [],
+    created_at: item.enriched_at,
+    metadata: {
+      sharpness: item.sharpness,
+      exposure_accuracy: item.exposure_accuracy,
+      composition_score: item.composition_score,
+      emotional_impact: item.emotional_impact,
+      portfolio_worthy: item.portfolio_worthy,
+      print_ready: item.print_ready,
+      social_media_optimized: item.social_media_optimized,
+      emotion: item.emotion,
+      composition: item.composition,
+      time_of_day: item.time_of_day,
+      play_type: item.play_type,
+      action_intensity: item.action_intensity,
+      use_cases: item.use_cases,
+      ai_provider: item.ai_provider,
+      ai_cost: item.ai_cost,
+      enriched_at: item.enriched_at,
+    },
+  }));
+}
+
+/**
+ * Fetch photos for browse context
+ * Returns all photos from the gallery for story generation
+ */
+async function fetchBrowsePhotos(supabase: any): Promise<Photo[]> {
+  const { data, error } = await supabase
+    .from('photo_metadata')
+    .select('*')
+    .order('enriched_at');
+
+  if (error) throw error;
+
   return data.map((item: any) => ({
     id: item.photo_id,
     image_key: item.image_key,

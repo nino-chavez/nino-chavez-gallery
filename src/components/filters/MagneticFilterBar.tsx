@@ -13,7 +13,7 @@ export function MagneticFilterBar({ filters, onChange, photoCount }: MagneticFil
   return (
     <div className="magnetic-filter-bar">
       {/* Quick filters */}
-      <div className="flex gap-4 flex-wrap justify-center mb-6">
+      <div className="flex gap-4 flex-wrap justify-center mb-8">
         <MagneticFilterOrb
           icon="⭐"
           label="Portfolio Quality"
@@ -60,9 +60,14 @@ export function MagneticFilterBar({ filters, onChange, photoCount }: MagneticFil
         />
       </div>
 
-      {/* Result count */}
-      <div className="text-center text-sm text-gray-600">
-        {photoCount} photos match your filters
+      {/* Result count - clean and minimal */}
+      <div className="text-center mt-6">
+        <span className="text-gray-900 text-lg font-semibold">
+          {photoCount}
+        </span>
+        <span className="text-gray-500 text-base ml-2">
+          {photoCount === 1 ? 'photo' : 'photos'}
+        </span>
       </div>
     </div>
   );

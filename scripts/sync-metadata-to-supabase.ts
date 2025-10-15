@@ -15,6 +15,9 @@ import { createClient } from '@supabase/supabase-js';
 
 interface EnrichedPhoto {
   image_key: string;
+  album_key: string;
+  album_name: string;
+  image_url: string;
   metadata_json: string;
   cost: number;
   processed_at: string;
@@ -33,7 +36,7 @@ async function syncMetadata(sqliteDbPath: string) {
   try {
     // Get all processed photos
     const photos = db.prepare(`
-      SELECT image_key, metadata_json, cost, processed_at
+      SELECT image_key, album_key, album_name, image_url, metadata_json, cost, processed_at
       FROM photos
       WHERE status = 'processed'
     `).all() as EnrichedPhoto[];
@@ -52,6 +55,7 @@ async function syncMetadata(sqliteDbPath: string) {
           .upsert({
             photo_id: photo.image_key,
             image_key: photo.image_key,
+            album_key: photo.album_key,
 
             // Quality scores
             sharpness: metadata.quality?.sharpness,

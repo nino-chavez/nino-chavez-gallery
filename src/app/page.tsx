@@ -1,127 +1,152 @@
-import { fetchGalleryData, fetchAlbumImages } from '@/lib/smugmug/client';
-import { HomePageClient } from '@/components/HomePageClient';
+'use client';
 
-interface Album {
-  albumKey: string;
-  name: string;
-  description: string;
-  photoCount: number;
-  keywords: string;
-  thumbnailUrl?: string;
-}
+import { useState } from 'react';
+import useSWR from 'swr';
+import { QualityGradientGrid } from '@/components/portfolio/QualityGradientGrid';
+import { PlayTypeMorphGrid } from '@/components/gallery/PlayTypeMorphGrid';
+import { EmotionTimeline } from '@/components/interactions/EmotionTimeline';
+import { MagneticFilterBar } from '@/components/filters/MagneticFilterBar';
+import { ContextualCursor } from '@/components/interactions/ContextualCursor';
+import { usePhotoFilters } from '@/hooks/usePhotoFilters';
+import type { PhotoFilterState, Photo } from '@/types/photo';
 
-interface GalleryContext {
-  username: string;
-  generatedAt: string;
-  totalAlbums: number;
-  totalPhotos: number;
-  albums: Album[];
-  initialPage: number;
-  totalPages: number;
-}
+type ViewMode = 'grid' | 'quality' | 'timeline';
 
-/**
- * Get initial gallery context for SSR
- *
- * Performance optimizations:
- * - Only loads first 12 albums on initial page load
- * - Fetches thumbnails in parallel with limit
- * - Reduces API calls from 21+ to 13 (1 albums + 12 thumbnails)
- * - Client can lazy-load more albums via API
- */
-async function getGalleryContext(): Promise<GalleryContext> {
-  const galleryData = await fetchGalleryData();
+// SWR fetcher function
+const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-  const ALBUMS_PER_PAGE = 12;
-  const totalPages = Math.ceil(galleryData.albums.length / ALBUMS_PER_PAGE);
+export default function PortfolioPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>('quality');
+  const [filters, setFilters] = useState<PhotoFilterState>({});
+  const [hoveredPhoto, setHoveredPhoto] = useState<Photo | null>(null);
 
-  // Only load first page of albums with thumbnails
-  const firstPageAlbums = galleryData.albums.slice(0, ALBUMS_PER_PAGE);
-
-  const albumsWithThumbnails = await Promise.all(
-    firstPageAlbums.map(async (album) => {
-      try {
-        const images = await fetchAlbumImages(album.AlbumKey);
-        const firstImage = images[0];
-
-        return {
-          albumKey: album.AlbumKey,
-          name: album.Title,
-          description: album.Description || '',
-          photoCount: album.TotalImageCount,
-          keywords: album.Keywords || '',
-          thumbnailUrl: firstImage?.ThumbnailUrl || undefined,
-        };
-      } catch (error) {
-        console.error(`Failed to fetch thumbnail for album ${album.AlbumKey}:`, error);
-        return {
-          albumKey: album.AlbumKey,
-          name: album.Title,
-          description: album.Description || '',
-          photoCount: album.TotalImageCount,
-          keywords: album.Keywords || '',
-        };
-      }
-    })
+  // Replace useEffect + fetch with SWR for instant navigation & caching
+  const { data, error, isLoading } = useSWR(
+    '/api/gallery?portfolioWorthy=true',
+    fetcher,
+    {
+      revalidateOnFocus: false,      // Don't refetch on window focus
+      revalidateOnReconnect: false,  // Don't refetch on network reconnect
+      dedupingInterval: 60000,       // Dedupe identical requests within 60s
+      revalidateIfStale: true,       // Revalidate stale data in background
+    }
   );
 
-  return {
-    username: process.env.SMUGMUG_USERNAME || 'ninochavez',
-    generatedAt: new Date().toISOString(),
-    totalAlbums: galleryData.albums.length,
-    totalPhotos: galleryData.totalImages,
-    albums: albumsWithThumbnails,
-    initialPage: 1,
-    totalPages,
-  };
-}
-
-export default async function HomePage() {
-  const context = await getGalleryContext();
+  const photos = data?.photos || [];
+  const filteredPhotos = usePhotoFilters(photos, filters);
 
   return (
-    <main className="min-h-screen bg-zinc-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Header */}
-        <header className="mb-12">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8">
-            <div>
-              <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3">
-                Action Sports Photography
-              </h1>
-              <p className="text-lg text-zinc-400 max-w-2xl">
-                Professional skateboarding, BMX, and extreme sports photography by {context.username}
-              </p>
-            </div>
-            <a
-              href="/search"
-              className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+    <div className="portfolio-page min-h-screen">
+      {/* Contextual cursor */}
+      <ContextualCursor hoveredPhoto={hoveredPhoto} />
+
+      {/* Header - Minimal, Photos First */}
+      <header className="mx-auto max-w-7xl px-6 pt-12 pb-8">
+        <h1 className="text-2xl font-medium mb-2 text-white/90">
+          Portfolio
+        </h1>
+        <p className="text-sm text-white/50">
+          {filteredPhotos.length} photos
+        </p>
+
+        {/* Simple text filters - minimal, top right */}
+        <div className="absolute top-12 right-6 flex gap-4 text-xs">
+          <button
+            className={`transition-colors ${
+              viewMode === 'quality'
+                ? 'text-white'
+                : 'text-white/40 hover:text-white/70'
+            }`}
+            onClick={() => setViewMode('quality')}
+          >
+            Quality
+          </button>
+          <button
+            className={`transition-colors ${
+              viewMode === 'grid'
+                ? 'text-white'
+                : 'text-white/40 hover:text-white/70'
+            }`}
+            onClick={() => setViewMode('grid')}
+          >
+            Grid
+          </button>
+          <button
+            className={`transition-colors ${
+              viewMode === 'timeline'
+                ? 'text-white'
+                : 'text-white/40 hover:text-white/70'
+            }`}
+            onClick={() => setViewMode('timeline')}
+          >
+            Timeline
+          </button>
+        </div>
+      </header>
+
+      {/* Loading state with modern spinner */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20 animate-fade-in-up">
+          <div className="text-center">
+            <div className="spinner mx-auto mb-6"></div>
+            <p className="text-gray-500 text-lg">Loading portfolio...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state - Vercel style */}
+      {!isLoading && filteredPhotos.length === 0 && (
+        <div className="relative mx-auto max-w-2xl px-8 py-20 text-center">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-12">
+            <svg className="w-16 h-16 mx-auto mb-6 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h2 className="text-2xl font-semibold mb-3 text-white">No photos found</h2>
+            <p className="text-base mb-6 text-white/50">
+              Try adjusting your filters or check back later
+            </p>
+            <button
+              onClick={() => setFilters({})}
+              className="px-6 py-3 text-sm font-medium rounded-xl bg-white text-black hover:bg-white/90 transition-all duration-200"
             >
-              Search Photos
-            </a>
+              Clear Filters
+            </button>
           </div>
+        </div>
+      )}
 
-          {/* Stats */}
-          <div className="flex items-center gap-6 text-sm">
-            <span className="text-zinc-400">
-              <span className="text-white font-semibold">{context.totalAlbums}</span> albums
-            </span>
-            <span className="text-zinc-700">•</span>
-            <span className="text-zinc-400">
-              <span className="text-white font-semibold">{context.totalPhotos.toLocaleString()}</span> photos
-            </span>
-            <span className="text-zinc-700">•</span>
-            <span className="text-zinc-500">Updated {new Date(context.generatedAt).toLocaleDateString()}</span>
-          </div>
-        </header>
-
-        {/* Albums Grid with Pagination */}
-        <HomePageClient
-          initialAlbums={context.albums}
-          totalAlbums={context.totalAlbums}
-          totalPages={context.totalPages}
-        />
-      </div>
-    </main>
+      {/* Render based on view mode */}
+      {!isLoading && filteredPhotos.length > 0 && (
+        <div
+          className="relative px-8 pb-12"
+          onMouseEnter={() => {}}
+          onMouseLeave={() => setHoveredPhoto(null)}
+        >
+          {viewMode === 'quality' && (
+            <QualityGradientGrid 
+              photos={filteredPhotos}
+              onPhotoClick={(photo) => setHoveredPhoto(photo)}
+            />
+          )}
+          {viewMode === 'grid' && (
+            <PlayTypeMorphGrid 
+              photos={filteredPhotos} 
+              activePlayType={null}
+              onPhotoClick={(photo) => setHoveredPhoto(photo)}
+            />
+          )}
+          {viewMode === 'timeline' && (
+            <EmotionTimeline
+              photos={filteredPhotos}
+              onPhotoSetChange={(filtered) => {
+                // Timeline filtering handled by EmotionTimeline internally
+                console.log('Timeline showing', filtered.length, 'photos');
+              }}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }

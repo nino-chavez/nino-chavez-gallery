@@ -128,7 +128,7 @@ function generateDisplayTitle(
 
   // Fallback
   if (parts.length === 0) {
-    return 'Action Sports Photo';
+    return 'Creative Action Photo';
   }
 
   return parts.join(' - ');
@@ -178,7 +178,7 @@ function generateDisplayCaption(
 
   // Minimal fallback
   if (parsed.primary[0]) {
-    return `Action sports: ${parsed.primary[0]}`;
+    return `Creative action: ${parsed.primary[0]}`;
   }
 
   return '';
@@ -302,7 +302,7 @@ export function generateSummary(metadata: EnrichedMetadata): string {
     parts.push(`in the ${categoryTags.time}`);
   }
 
-  return parts.length > 0 ? parts.join(' ') : 'Action sports photography';
+  return parts.length > 0 ? parts.join(' ') : 'Creative action photography';
 }
 
 /**

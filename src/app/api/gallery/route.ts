@@ -1,36 +1,63 @@
 import { NextResponse } from 'next/server';
-import { fetchGalleryData } from '@/lib/smugmug/client';
+import { fetchPhotos, testConnection } from '@/lib/supabase/client';
+import type { PhotoFilterState } from '@/types/photo';
 
 /**
  * GET /api/gallery
  *
- * Fetches complete gallery data from SmugMug (lazy loading)
- * Albums are loaded with metadata, images loaded on-demand
+ * Fetches enriched photo data from Supabase
+ * Supports filtering by portfolioWorthy, quality, play types, etc.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const galleryData = await fetchGalleryData();
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+
+    // Build filters from query params
+    const filters: PhotoFilterState = {};
+
+    if (searchParams.get('portfolioWorthy') === 'true') {
+      filters.portfolioWorthy = true;
+    }
+
+    if (searchParams.get('printReady') === 'true') {
+      filters.printReady = true;
+    }
+
+    if (searchParams.get('socialMediaOptimized') === 'true') {
+      filters.socialMediaOptimized = true;
+    }
+
+    const minQuality = searchParams.get('minQualityScore');
+    if (minQuality) {
+      filters.minQualityScore = parseFloat(minQuality);
+    }
+
+    const playTypes = searchParams.get('playTypes');
+    if (playTypes) {
+      filters.playTypes = playTypes.split(',');
+    }
+
+    const emotions = searchParams.get('emotions');
+    if (emotions) {
+      filters.emotions = emotions.split(',');
+    }
+
+    // Fetch photos from Supabase
+    const photos = await fetchPhotos(filters);
 
     return NextResponse.json(
       {
         success: true,
-        username: process.env.SMUGMUG_USERNAME || 'ninochavez',
+        photos,
+        count: photos.length,
         generatedAt: new Date().toISOString(),
-        totalAlbums: galleryData.albums.length,
-        totalPhotos: galleryData.totalImages,
-        albums: galleryData.albums.map(album => ({
-          albumKey: album.AlbumKey,
-          name: album.Title,
-          description: album.Description,
-          photoCount: album.TotalImageCount,
-          keywords: album.Keywords,
-        })),
       },
       {
         headers: {
-          // Cache for 1h, serve stale up to 2h while revalidating
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
-          'CDN-Cache-Control': 'max-age=3600',
+          // Cache for 5 minutes, serve stale up to 1h while revalidating
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+          'CDN-Cache-Control': 'max-age=300',
         },
       }
     );
@@ -39,10 +66,31 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to load gallery context',
+        error: 'Failed to load gallery',
         message: error instanceof Error ? error.message : 'Unknown error',
+        photos: [],
+        count: 0,
       },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Test endpoint to verify database connection
+ */
+export async function HEAD() {
+  try {
+    const stats = await testConnection();
+
+    return new Response(null, {
+      status: stats.connected ? 200 : 503,
+      headers: {
+        'X-Total-Photos': stats.totalPhotos.toString(),
+        'X-Portfolio-Photos': stats.portfolioPhotos.toString(),
+      },
+    });
+  } catch (error) {
+    return new Response(null, { status: 503 });
   }
 }

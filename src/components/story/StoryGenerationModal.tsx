@@ -10,7 +10,7 @@ interface StoryGenerationModalProps {
   isOpen: boolean;
   onClose: () => void;
   context: {
-    type: 'athlete' | 'game' | 'season';
+    type: 'athlete' | 'game' | 'season' | 'browse';
     id: string;
     name: string;
   };
@@ -22,42 +22,42 @@ const STORY_TYPES = [
     icon: '⭐',
     title: 'Player Highlight Reel',
     description: 'Top 10 portfolio moments',
-    contexts: ['athlete'],
+    contexts: ['athlete', 'browse'],
   },
   {
     id: 'game-winning-rally',
     icon: '🏆',
     title: 'Game-Winning Rally',
     description: 'Final 5 minutes of victory',
-    contexts: ['game'],
+    contexts: ['game', 'browse'],
   },
   {
     id: 'season-journey',
     icon: '📖',
     title: 'Season Journey',
     description: 'One photo per game',
-    contexts: ['season', 'athlete'],
+    contexts: ['season', 'athlete', 'browse'],
   },
   {
     id: 'comeback-story',
     icon: '💪',
     title: 'The Comeback',
     description: 'From adversity to triumph',
-    contexts: ['game'],
+    contexts: ['game', 'browse'],
   },
   {
     id: 'technical-excellence',
     icon: '📸',
     title: 'Technical Excellence',
     description: 'Best quality shots',
-    contexts: ['game', 'season', 'athlete'],
+    contexts: ['game', 'season', 'athlete', 'browse'],
   },
   {
     id: 'emotion-spectrum',
     icon: '🎭',
     title: 'Emotion Spectrum',
     description: 'Full range of emotions',
-    contexts: ['game'],
+    contexts: ['game', 'browse'],
   },
 ];
 
@@ -68,7 +68,7 @@ export function StoryGenerationModal({ isOpen, onClose, context }: StoryGenerati
 
   useFocusTrap(isOpen);
 
-  const availableTypes = STORY_TYPES.filter(type => 
+  const availableTypes = STORY_TYPES.filter(type =>
     type.contexts.includes(context.type)
   );
 
@@ -97,7 +97,7 @@ export function StoryGenerationModal({ isOpen, onClose, context }: StoryGenerati
       }
 
       const { story } = await response.json();
-      
+
       // Success - close modal and refresh page
       onClose();
       window.location.reload();

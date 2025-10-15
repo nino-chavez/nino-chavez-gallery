@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Nino Chavez Photography',
-  description: 'Action sports photography by Nino Chavez',
+  description: 'Creative action photography by Nino Chavez',
 };
 
 export default function RootLayout({

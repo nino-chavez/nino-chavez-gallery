@@ -26,19 +26,13 @@ export function MagneticFilterOrb({
 
   return (
     <motion.button
-      className="relative px-6 py-3 rounded-full font-medium transition-colors border-2"
+      className={`btn-magnetic ${active ? 'btn-secondary active' : 'btn-secondary'} flex items-center gap-2`}
       style={{ x, y }}
       whileHover={{
-        scale: 1.2,
-        boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+        scale: 1.05,
         transition: MOTION.spring.snappy,
       }}
       whileTap={{ scale: 0.95 }}
-      animate={{
-        backgroundColor: active ? '#000' : '#fff',
-        color: active ? '#fff' : '#000',
-        borderColor: active ? '#000' : '#e5e7eb',
-      }}
       onMouseMove={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -68,10 +62,11 @@ export function MagneticFilterOrb({
       role="button"
       tabIndex={0}
     >
-      <span className="text-2xl mr-2">{icon}</span>
+      <span className="text-xl">{icon}</span>
       <motion.span
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
+        className="font-medium"
       >
         {label}
       </motion.span>
