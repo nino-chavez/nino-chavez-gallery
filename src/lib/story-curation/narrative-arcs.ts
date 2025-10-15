@@ -236,7 +236,7 @@ export function detectTechnicalExcellence(
 
   // Sort by overall quality
   const sorted = excellence
-    .sort((a, b) => calculateAvgQuality(b.metadata) - calculateAvgQuality(a.metadata))
+    .sort((a, b) => calculateAverageQuality(b.metadata) - calculateAverageQuality(a.metadata))
     .slice(0, 12);
 
   const emotionalCurve = sorted.map(p => ({
@@ -278,7 +278,7 @@ export function detectEmotionSpectrum(
   const spectrum = Object.entries(byEmotion)
     .map(([emotion, emotionPhotos]) => {
       return emotionPhotos.reduce((best, current) =>
-        calculateAvgQuality(current.metadata) > calculateAvgQuality(best.metadata)
+        calculateAverageQuality(current.metadata) > calculateAverageQuality(best.metadata)
           ? current
           : best
       );

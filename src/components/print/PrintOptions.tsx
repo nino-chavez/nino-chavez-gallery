@@ -17,8 +17,8 @@ export function PrintOptions({ photo, options, onChange }: PrintOptionsProps) {
   const [selectedSize, setSelectedSize] = useState(PRINT_SIZES[2]); // Default to 8x10
   const [selectedMaterial, setSelectedMaterial] = useState(PRINT_MATERIALS[0]); // Default to glossy
   const [quantity, setQuantity] = useState(1);
-  const [framing, setFraming] = useState({ enabled: false, style: '', width: 2 });
-  const [mounting, setMounting] = useState({ enabled: false, type: '', thickness: 0.25 });
+  const [framing, setFraming] = useState<{ enabled: boolean; style: 'black' | 'white' | 'wood' | 'silver' | 'gold'; width: number }>({ enabled: false, style: 'black', width: 2 });
+  const [mounting, setMounting] = useState<{ enabled: boolean; type: 'foam-board' | 'gatorboard' | 'sintra' | 'aluminum'; thickness: number }>({ enabled: false, type: 'foam-board', thickness: 0.25 });
 
   // Initialize with recommended options based on photo metadata
   useEffect(() => {
@@ -142,7 +142,7 @@ export function PrintOptions({ photo, options, onChange }: PrintOptionsProps) {
               <label className="block text-sm text-gray-700">Frame Style</label>
               <select
                 value={framing.style}
-                onChange={(e) => setFraming({ ...framing, style: e.target.value })}
+                onChange={(e) => setFraming({ ...framing, style: e.target.value as 'black' | 'white' | 'wood' | 'silver' | 'gold' })}
                 className="w-full p-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Select frame style</option>
@@ -180,7 +180,7 @@ export function PrintOptions({ photo, options, onChange }: PrintOptionsProps) {
               <label className="block text-sm text-gray-700">Mounting Type</label>
               <select
                 value={mounting.type}
-                onChange={(e) => setMounting({ ...mounting, type: e.target.value })}
+                onChange={(e) => setMounting({ ...mounting, type: e.target.value as 'foam-board' | 'gatorboard' | 'sintra' | 'aluminum' })}
                 className="w-full p-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Select mounting type</option>

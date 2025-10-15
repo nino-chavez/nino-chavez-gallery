@@ -5,11 +5,11 @@ import { PlayBreakdown } from '@/components/athlete/PlayBreakdown';
 import type { Photo } from '@/types/photo';
 
 interface AthletePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function AthleteDashboard({ params }: AthletePageProps) {
-  const { id } = params;
+  const { id } = await params;
   
   // Fetch athlete data (placeholder - implement actual API call)
   const athlete = await getAthlete(id);
@@ -65,7 +65,7 @@ export default async function AthleteDashboard({ params }: AthletePageProps) {
             <h2 className="text-2xl font-bold mb-2">⭐ Your Best Shots</h2>
             <p className="text-gray-600">{bestShots.length} portfolio-quality photos</p>
           </div>
-          <DownloadPackButton photos={bestShots} packName="Best Shots" />
+          <DownloadPackButton photos={bestShots} packType="portfolio" />
         </div>
         <PhotoGrid photos={bestShots} />
       </section>

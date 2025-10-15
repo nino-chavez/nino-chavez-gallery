@@ -4,12 +4,12 @@ import type { Photo } from '@/types/photo';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Fetch story details
     const { data: story, error: storyError } = await supabase

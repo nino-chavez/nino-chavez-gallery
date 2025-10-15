@@ -3,13 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import type { Photo } from '@/types/photo';
 
 interface PhotoPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function PhotoPage({ params }: PhotoPageProps) {
-  const photo = await getPhoto(params.id);
+  const { id } = await params;
+  const photo = await getPhoto(id);
 
   if (!photo) {
     return (
