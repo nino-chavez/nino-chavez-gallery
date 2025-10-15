@@ -56,6 +56,12 @@ async function syncMetadata(sqliteDbPath: string) {
             photo_id: photo.image_key,
             image_key: photo.image_key,
             album_key: photo.album_key,
+            album_name: photo.album_name,
+
+            // Image URLs (CRITICAL - was missing!)
+            ImageUrl: photo.image_url,
+            OriginalUrl: photo.image_url, // Use same URL for now
+            ThumbnailUrl: photo.image_url?.replace('/D/', '/M/'), // Generate thumbnail URL
 
             // Quality scores
             sharpness: metadata.quality?.sharpness,

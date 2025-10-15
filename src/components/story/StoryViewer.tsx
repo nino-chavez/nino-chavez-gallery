@@ -56,7 +56,7 @@ export function StoryViewer({ story, autoPlay = false, onClose }: StoryViewerPro
   const currentEmotion = story.emotionalCurve[currentIndex];
 
   return (
-    <div className="story-viewer fixed inset-0 z-50 bg-black">
+    <div className="story-viewer fixed inset-0 z-50 bg-black" data-testid="story-viewer">
       {/* Close button */}
       {onClose && (
         <button

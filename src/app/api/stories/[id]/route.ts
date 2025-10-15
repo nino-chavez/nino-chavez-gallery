@@ -11,6 +11,15 @@ export async function GET(
   try {
     const { id } = await params;
 
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { error: 'Story not found' },
+        { status: 404 }
+      );
+    }
+
     // Fetch story details
     const { data: story, error: storyError } = await supabase
       .from('stories')
@@ -18,7 +27,16 @@ export async function GET(
       .eq('id', id)
       .single();
 
-    if (storyError) throw storyError;
+    if (storyError) {
+      // Return 404 for not found, 500 for other errors
+      if (storyError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'Story not found' },
+          { status: 404 }
+        );
+      }
+      throw storyError;
+    }
 
     // Fetch story photos with metadata
     const { data: storyPhotos, error: photosError } = await supabase

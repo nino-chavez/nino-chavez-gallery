@@ -60,3 +60,7 @@ logs/
 .geocoding-cache.json
 enrichment-*.db
 enrichment-*-summary.json
+
+# Test results and test files (local only)
+test-results/
+tests/

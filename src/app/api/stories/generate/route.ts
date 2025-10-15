@@ -15,6 +15,16 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
   try {
+    // Authentication check
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required to generate stories' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { storyType, context } = body;
 

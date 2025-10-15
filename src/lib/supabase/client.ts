@@ -72,16 +72,24 @@ export async function fetchPhotos(filters?: PhotoFilterState): Promise<Photo[]> 
   }
 
   // Map photo_metadata to Photo type
-  const photos: Photo[] = (data || []).map((row: any) => ({
-    id: row.photo_id,
-    image_key: row.image_key,
-    // Note: image_url needs to be fetched from SmugMug API
-    // For now, construct a placeholder URL pattern
-    image_url: `https://photos.smugmug.com/photos/${row.image_key}/0/D/${row.image_key}-D.jpg`,
-    title: row.image_key, // Placeholder
-    caption: '',
-    keywords: [],
-    created_at: row.enriched_at,
+  const photos: Photo[] = (data || []).map((row: any) => {
+    const imageUrl = row.ImageUrl || row.OriginalUrl || `/api/smugmug/images/${row.image_key}`;
+    
+    // Debug logging
+    if (imageUrl.includes('/photos/') && imageUrl.includes('/0/D/')) {
+      console.log('WARNING: Using old URL pattern for', row.image_key, ':', imageUrl);
+      console.log('  ImageUrl:', row.ImageUrl);
+      console.log('  OriginalUrl:', row.OriginalUrl);
+    }
+    
+    return {
+      id: row.photo_id,
+      image_key: row.image_key,
+      image_url: imageUrl,
+      title: row.image_key, // Placeholder
+      caption: '',
+      keywords: [],
+      created_at: row.enriched_at,
     metadata: {
       sharpness: row.sharpness,
       exposure_accuracy: row.exposure_accuracy,
@@ -100,7 +108,8 @@ export async function fetchPhotos(filters?: PhotoFilterState): Promise<Photo[]> 
       ai_cost: row.ai_cost,
       enriched_at: row.enriched_at,
     },
-  }));
+  };
+  });
 
   return photos;
 }

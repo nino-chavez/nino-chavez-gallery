@@ -98,9 +98,9 @@ export function StoryGenerationModal({ isOpen, onClose, context }: StoryGenerati
 
       const { story } = await response.json();
 
-      // Success - close modal and refresh page
+      // Success - redirect to story page
       onClose();
-      window.location.reload();
+      window.location.href = `/stories/${story.id}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate story');
     } finally {
