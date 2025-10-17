@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Fuse from 'fuse.js';
 import { Heading, Text } from '@/components/ui';
+import { EmptyState } from '@/components/common/EmptyState';
 import { formatMetadata, getDisplayTags } from '@/lib/metadata-formatter';
 
 interface Photo {
@@ -53,9 +54,13 @@ export default function SearchPage() {
         data.photos.forEach((photo: any) => {
           albumsMap.set(photo.albumKey, photo.albumName);
 
-          // Extract sports from keywords
+          // Extract sports from keywords (handle both string and array types)
           if (photo.keywords) {
-            photo.keywords.split(/[;,]/).forEach((keyword: string) => {
+            const keywordsArray = typeof photo.keywords === 'string'
+              ? photo.keywords.split(/[;,]/)
+              : photo.keywords;
+
+            keywordsArray.forEach((keyword: string) => {
               const trimmed = keyword.trim().toLowerCase();
               if (trimmed.startsWith('sport:')) {
                 sportsSet.add(trimmed.replace('sport:', '').trim());
@@ -72,7 +77,11 @@ export default function SearchPage() {
           fileName: photo.fileName,
           title: photo.title,
           caption: photo.caption,
-          keywords: photo.keywords ? photo.keywords.split(/[;,]/).map((k: string) => k.trim()) : [],
+          keywords: photo.keywords
+            ? (typeof photo.keywords === 'string'
+                ? photo.keywords.split(/[;,]/).map((k: string) => k.trim())
+                : photo.keywords)
+            : [],
           imageUrl: photo.imageUrl,
           thumbnailUrl: photo.thumbnailUrl,
           albumName: photo.albumName,
@@ -355,33 +364,16 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* No Results */}
+        {/* No Results - Task 3.1.4: Integrate EmptyState component */}
         {!loading && hasActiveFilters && results.length === 0 && (
-          <div className="text-center py-24">
-            <svg
-              className="w-24 h-24 text-zinc-700 mx-auto mb-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <Heading level={3} className="mb-2">No Results Found</Heading>
-            <Text variant="body" className="mb-4">
-              Try adjusting your search or filters
-            </Text>
-            <button
-              onClick={clearFilters}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
-            >
-              Clear Filters
-            </button>
-          </div>
+          <EmptyState
+            type="search"
+            searchQuery={query}
+            action={{
+              label: 'Clear Filters',
+              onClick: clearFilters,
+            }}
+          />
         )}
 
         {/* Example Queries */}

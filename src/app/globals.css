@@ -100,6 +100,31 @@ img {
 }
 
 /* ==========================================
+   ACCESSIBILITY - Skip to Content Link
+   Task 1.2.1: Skip-to-content link
+   ========================================== */
+
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  z-index: 100;
+  padding: 8px 16px;
+  background-color: #4F46E5; /* WCAG AA compliant - 4.5:1+ contrast ratio */
+  color: var(--color-white);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 0 0 4px 0;
+  transition: top 0.3s;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid var(--color-white);
+  outline-offset: 2px;
+}
+
+/* ==========================================
    SEMANTIC TYPOGRAPHY UTILITIES
    Apply consistent typography scale across app
    ========================================== */
@@ -337,6 +362,16 @@ img {
   }
 }
 
+/* Task 1.3.1: Pulse animation for skeleton loaders */
+@keyframes pulse-skeleton {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1.0;
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -352,6 +387,10 @@ img {
 .animate-shimmer {
   animation: shimmer 2s infinite linear;
   background-size: 1000px 100%;
+}
+
+.animate-pulse-skeleton {
+  animation: pulse-skeleton 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ==========================================
@@ -410,6 +449,7 @@ img {
 
 /* ==========================================
    FOCUS STYLES - Accessible & Modern
+   Task 1.2.3: Visible focus indicators with WCAG AA contrast
    ========================================== */
 
 button:focus-visible,
@@ -417,13 +457,43 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-[role="button"]:focus-visible {
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Enhanced focus for light backgrounds */
+.focus-light:focus-visible {
+  outline: 2px solid var(--color-gray-900);
   outline-offset: 2px;
 }
 
+/* Enhanced focus for dark backgrounds */
+.focus-dark:focus-visible {
+  outline: 2px solid var(--color-white);
+  outline-offset: 2px;
+}
+
+/* Remove default focus for non-keyboard interactions */
 *:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Ensure interactive elements have minimum touch target size */
+button,
+a[href],
+input,
+select,
+textarea,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+[tabindex="0"] {
+  min-height: 44px; /* WCAG 2.1 Level AAA recommendation */
 }
 
 /* ==========================================

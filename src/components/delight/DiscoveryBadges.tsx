@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { EMOTION_ICONS, PLAY_TYPE_ICONS } from '@/lib/motion-tokens';
 import type { Photo } from '@/types/photo';
+import type { BadgeProgress } from '@/lib/badge-storage';
 
 interface Badge {
   id: string;
@@ -177,13 +178,32 @@ export function DiscoveryTracker({ viewedPhoto }: DiscoveryTrackerProps) {
   );
 }
 
-export function BadgeCollection({ badges }: { badges: Set<string> }) {
+export function BadgeCollection({
+  badges,
+  progress
+}: {
+  badges: Set<string>;
+  progress?: BadgeProgress;
+}) {
+  // Map badge IDs to progress keys
+  const badgeProgressMap: Record<string, string> = {
+    'emotion-explorer': 'emotionExplorer',
+    'volleyball-connoisseur': 'playAnalyst',
+    'quality-hunter': 'portfolioHunter',
+    'peak-seeker': 'peakSeeker',
+    'golden-hour-enthusiast': 'goldenEye',
+    'print-collector': 'printMaster',
+  };
+
   return (
     <div className="badge-collection">
       <h3 className="text-xl font-bold mb-4">Your Badges</h3>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {AVAILABLE_BADGES.map(badge => {
           const isUnlocked = badges.has(badge.id);
+          const progressKey = badgeProgressMap[badge.id];
+          const progressText = progress?.[progressKey];
+
           return (
             <motion.div
               key={badge.id}
@@ -198,6 +218,13 @@ export function BadgeCollection({ badges }: { badges: Set<string> }) {
               </div>
               <div className="text-sm font-medium mb-1">{badge.title}</div>
               <div className="text-xs opacity-80">{badge.description}</div>
+
+              {/* Progress indicator for locked badges */}
+              {!isUnlocked && progressText && (
+                <div className="mt-2 text-xs font-mono opacity-70">
+                  {progressText}
+                </div>
+              )}
             </motion.div>
           );
         })}

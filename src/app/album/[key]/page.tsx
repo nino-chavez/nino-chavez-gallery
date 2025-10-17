@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { fetchAlbums, fetchAlbumImages } from '@/lib/smugmug/client';
 import { AlbumPageClient } from '@/components/AlbumPageClient';
+import { EmptyState } from '@/components/common/EmptyState';
 import { Heading, Text } from '@/components/ui';
 import type { SmugMugAlbum, SmugMugImage } from '@/types/smugmug';
 
@@ -76,8 +77,24 @@ export default async function AlbumPage({
           </div>
         </div>
 
-        {/* Photo Gallery with Lightbox and Prefetch Tracking */}
-        <AlbumPageClient albumKey={key} images={album.Images} />
+        {/* Task 3.1.4: Integrate EmptyState component for empty albums */}
+        {album.Images.length === 0 ? (
+          <EmptyState
+            type="album"
+            action={{
+              label: 'Back to Albums',
+              onClick: () => {
+                // Client-side navigation handled by onClick
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/';
+                }
+              },
+            }}
+          />
+        ) : (
+          // Photo Gallery with Lightbox and Prefetch Tracking
+          <AlbumPageClient albumKey={key} images={album.Images} />
+        )}
       </div>
     </main>
   );

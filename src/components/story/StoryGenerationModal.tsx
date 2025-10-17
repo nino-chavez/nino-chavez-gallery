@@ -1,77 +1,212 @@
 'use client';
 
-import { useState } from 'react';
+/**
+ * StoryGenerationModal Component
+ * Task 2.4.2: Build StoryGenerationModal component
+ * Task 2.4.4: Implement story generation flow
+ *
+ * Modal with 6 story type options, preview of photos that would be included,
+ * and story generation flow with API integration.
+ *
+ * Features:
+ * - Modal opens with smooth animation
+ * - Story types displayed in grid using StoryTypeCard
+ * - Close modal with Escape key
+ * - API call to /api/stories/generate with selected type
+ * - Loading state during generation
+ * - Navigate to story viewer on success
+ *
+ * Acceptance Criteria (2.4.2):
+ * - Modal opens with smooth animation
+ * - Story types displayed in grid
+ * - Close modal with Escape key
+ *
+ * Acceptance Criteria (2.4.4):
+ * - API call succeeds and creates story
+ * - Loading spinner visible during generation
+ * - Redirect to /stories/[id] on success
+ */
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { StoryTypeCard } from './StoryTypeCard';
 import { LoadingState } from '@/components/common/LoadingState';
 import { InlineError } from '@/components/common/ErrorState';
-import { useFocusTrap } from '@/components/common/Accessibility';
+import { Heading, Text } from '@/components/ui';
+import { MOTION } from '@/lib/motion-tokens';
 
-interface StoryGenerationModalProps {
+export type StoryType = 'game-winning-rally' | 'player-highlight' | 'season-journey' | 'comeback-story' | 'technical-excellence' | 'emotion-spectrum';
+
+export interface StoryGenerationModalProps {
+  /**
+   * Whether the modal is open
+   */
   isOpen: boolean;
+
+  /**
+   * Callback to close the modal
+   */
   onClose: () => void;
+
+  /**
+   * Context for story generation
+   */
   context: {
-    type: 'athlete' | 'game' | 'season' | 'browse';
+    type: 'browse' | 'portfolio' | 'album';
     id: string;
     name: string;
   };
+
+  /**
+   * Optional photo count estimates per story type
+   */
+  photoCounts?: Partial<Record<StoryType, number>>;
 }
 
-const STORY_TYPES = [
-  {
-    id: 'player-highlight',
-    icon: '⭐',
-    title: 'Player Highlight Reel',
-    description: 'Top 10 portfolio moments',
-    contexts: ['athlete', 'browse'],
-  },
+/**
+ * Story type configuration
+ */
+const STORY_TYPES: Array<{
+  id: StoryType;
+  icon: string;
+  label: string;
+  description: string;
+  gradient: string;
+}> = [
   {
     id: 'game-winning-rally',
     icon: '🏆',
-    title: 'Game-Winning Rally',
-    description: 'Final 5 minutes of victory',
-    contexts: ['game', 'browse'],
+    label: 'Game-Winning Rally',
+    description: 'Final 5 minutes with peak intensity moments',
+    gradient: 'from-yellow-400 to-amber-500',
+  },
+  {
+    id: 'player-highlight',
+    icon: '⭐',
+    label: 'Player Highlight Reel',
+    description: 'Top portfolio-worthy shots per player',
+    gradient: 'from-blue-400 to-indigo-500',
   },
   {
     id: 'season-journey',
-    icon: '📖',
-    title: 'Season Journey',
-    description: 'One photo per game',
-    contexts: ['season', 'athlete', 'browse'],
+    icon: '📅',
+    label: 'Season Journey',
+    description: 'Representative photos from each week',
+    gradient: 'from-green-400 to-emerald-500',
   },
   {
     id: 'comeback-story',
     icon: '💪',
-    title: 'The Comeback',
-    description: 'From adversity to triumph',
-    contexts: ['game', 'browse'],
+    label: 'Comeback Story',
+    description: 'Emotional arc: determination → intensity → triumph',
+    gradient: 'from-red-400 to-rose-500',
   },
   {
     id: 'technical-excellence',
-    icon: '📸',
-    title: 'Technical Excellence',
-    description: 'Best quality shots',
-    contexts: ['game', 'season', 'athlete', 'browse'],
+    icon: '🎯',
+    label: 'Technical Excellence',
+    description: 'Highest quality shots (sharpness/composition ≥9)',
+    gradient: 'from-purple-400 to-violet-500',
   },
   {
     id: 'emotion-spectrum',
-    icon: '🎭',
-    title: 'Emotion Spectrum',
-    description: 'Full range of emotions',
-    contexts: ['game', 'browse'],
+    icon: '🌈',
+    label: 'Emotion Spectrum',
+    description: 'Best photo for each emotion in a game',
+    gradient: 'from-pink-400 to-fuchsia-500',
   },
 ];
 
-export function StoryGenerationModal({ isOpen, onClose, context }: StoryGenerationModalProps) {
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+/**
+ * Modal entrance/exit animation variants
+ */
+const backdropVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+};
+
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: MOTION.duration.base,
+      ease: MOTION.ease.easeOut,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: 20,
+    transition: {
+      duration: MOTION.duration.fast,
+    },
+  },
+};
+
+/**
+ * StoryGenerationModal Component
+ *
+ * @example
+ * ```tsx
+ * <StoryGenerationModal
+ *   isOpen={isModalOpen}
+ *   onClose={() => setIsModalOpen(false)}
+ *   context={{
+ *     type: 'portfolio',
+ *     id: 'portfolio-1',
+ *     name: 'My Portfolio'
+ *   }}
+ *   photoCounts={{
+ *     'game-winning-rally': 24,
+ *     'player-highlight': 18,
+ *   }}
+ * />
+ * ```
+ */
+export function StoryGenerationModal({
+  isOpen,
+  onClose,
+  context,
+  photoCounts = {},
+}: StoryGenerationModalProps) {
+  const router = useRouter();
+  const [selectedType, setSelectedType] = useState<StoryType | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useFocusTrap(isOpen);
+  // Task 2.4.2: Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !isGenerating) {
+        onClose();
+      }
+    };
 
-  const availableTypes = STORY_TYPES.filter(type =>
-    type.contexts.includes(context.type)
-  );
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
 
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, isGenerating, onClose]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedType(null);
+      setError(null);
+    }
+  }, [isOpen]);
+
+  // Task 2.4.4: Implement story generation flow
   const handleGenerate = async () => {
     if (!selectedType) return;
 
@@ -83,10 +218,11 @@ export function StoryGenerationModal({ isOpen, onClose, context }: StoryGenerati
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          storyType: selectedType,
+          type: selectedType,
           context: {
-            [`${context.type}Id`]: context.id,
-            [`${context.type}Name`]: context.name,
+            type: context.type,
+            id: context.id,
+            name: context.name,
           },
         }),
       });
@@ -96,11 +232,11 @@ export function StoryGenerationModal({ isOpen, onClose, context }: StoryGenerati
         throw new Error(errorData.error || 'Failed to generate story');
       }
 
-      const { story } = await response.json();
+      const { id } = await response.json();
 
-      // Success - redirect to story page
+      // Task 2.4.4: Navigate to story viewer on success
+      router.push(`/stories/${id}`);
       onClose();
-      window.location.href = `/stories/${story.id}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate story');
     } finally {
@@ -112,97 +248,112 @@ export function StoryGenerationModal({ isOpen, onClose, context }: StoryGenerati
 
   return (
     <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      >
+      {isOpen && (
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+          variants={backdropVariants}
         >
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Generate Story</h2>
-              <p className="text-sm text-gray-600">{context.name}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-3xl leading-none"
-              aria-label="Close modal"
-            >
-              ×
-            </button>
-          </div>
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={!isGenerating ? onClose : undefined}
+            aria-hidden="true"
+          />
 
-          {/* Content */}
-          <div className="p-6">
-            {error && (
-              <div className="mb-4">
-                <InlineError message={error} onDismiss={() => setError(null)} />
+          {/* Modal */}
+          <motion.div
+            className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+            variants={modalVariants}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+              <div>
+                <Heading level={2} id="modal-title" className="text-2xl">
+                  Generate Story
+                </Heading>
+                <Text variant="caption" className="text-gray-600 mt-1">
+                  {context.name}
+                </Text>
+              </div>
+              <button
+                onClick={onClose}
+                disabled={isGenerating}
+                className="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 rounded"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Error message */}
+              {error && (
+                <div className="mb-6">
+                  <InlineError message={error} onDismiss={() => setError(null)} />
+                </div>
+              )}
+
+              {/* Task 2.4.4: Loading state during generation */}
+              {isGenerating ? (
+                <LoadingState message="Generating your story..." />
+              ) : (
+                <>
+                  <Text variant="body" className="text-gray-600 mb-6">
+                    Choose a story type to automatically generate a curated collection
+                    of photos with a narrative arc.
+                  </Text>
+
+                  {/* Task 2.4.2: Story types displayed in grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {STORY_TYPES.map((storyType) => (
+                      <StoryTypeCard
+                        key={storyType.id}
+                        type={storyType.id}
+                        icon={storyType.icon}
+                        label={storyType.label}
+                        description={storyType.description}
+                        gradient={storyType.gradient}
+                        photoCount={photoCounts[storyType.id]}
+                        selected={selectedType === storyType.id}
+                        onClick={() => setSelectedType(storyType.id)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer with action buttons */}
+            {!isGenerating && (
+              <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3 justify-end">
+                <button
+                  onClick={onClose}
+                  className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  aria-label="Cancel story generation"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleGenerate}
+                  disabled={!selectedType}
+                  className="px-6 py-3 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  aria-label="Generate selected story"
+                >
+                  Generate Story
+                </button>
               </div>
             )}
-
-            {isGenerating ? (
-              <LoadingState message="Generating your story..." />
-            ) : (
-              <>
-                <p className="text-gray-600 mb-6">
-                  Choose a story type to automatically generate a highlight reel
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {availableTypes.map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => setSelectedType(type.id)}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        selectedType === type.id
-                          ? 'border-black bg-black text-white'
-                          : 'border-gray-200 hover:border-gray-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-3xl">{type.icon}</span>
-                        <div>
-                          <h3 className="font-bold mb-1">{type.title}</h3>
-                          <p className={`text-sm ${
-                            selectedType === type.id ? 'text-white/80' : 'text-gray-600'
-                          }`}>
-                            {type.description}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleGenerate}
-                    disabled={!selectedType}
-                    className="flex-1 bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Generate Story
-                  </button>
-                  <button
-                    onClick={onClose}
-                    className="px-6 py-3 rounded-full border border-gray-300 hover:bg-gray-50 transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 }

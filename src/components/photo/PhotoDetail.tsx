@@ -1,14 +1,31 @@
+'use client';
+
+import { EmotionIndicator } from './EmotionIndicator';
 import { QualityBadges } from './QualityBadges';
 import { QualityMetrics } from './QualityMetrics';
 import { MetadataTags } from './MetadataTags';
 import { UseCaseSuggestions } from './UseCaseSuggestions';
 import { SimilarPhotos } from './SimilarPhotos';
 import type { Photo } from '@/types/photo';
+import type { EmotionType } from '@/contexts/EmotionContext';
 
 interface PhotoDetailProps {
   photo: Photo;
 }
 
+/**
+ * PhotoDetail Component
+ * Task 2.1.6: Add emotion indicator to photo detail view
+ *
+ * Features:
+ * - Show dominant emotion with icon and color
+ * - Theme shift: page adopts emotion gradient
+ *
+ * Acceptance criteria:
+ * - Emotion displayed with correct icon and color
+ * - Page theme transitions smoothly (300ms)
+ * - Theme persists while viewing photo
+ */
 export function PhotoDetail({ photo }: PhotoDetailProps) {
   return (
     <div className="photo-detail max-w-7xl mx-auto px-4 py-8">
@@ -50,6 +67,14 @@ export function PhotoDetail({ photo }: PhotoDetailProps) {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{photo.title}</h1>
             <p className="text-gray-600">{photo.caption}</p>
           </div>
+
+          {/* Task 2.1.6: Emotion indicator */}
+          {photo.metadata?.emotion && (
+            <EmotionIndicator
+              emotion={photo.metadata.emotion as EmotionType}
+              emotionalImpact={photo.metadata.emotional_impact}
+            />
+          )}
 
           {/* Quality scores */}
           <QualityMetrics photo={photo} />

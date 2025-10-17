@@ -51,13 +51,14 @@ test.describe('Browse Page - Filter Integration', () => {
     await page.goto('/browse');
     await page.waitForLoadState('networkidle');
 
-    // Wait for initial photo count to be displayed
-    const photoCountElement = page.locator('span.text-gray-500').filter({ hasText: /^photos?$/ });
-    await expect(photoCountElement).toBeVisible();
+    // Wait for initial photo count to be displayed (actual format: "X photos match your filters")
+    const photoCountText = page.locator('text=/\\d+ photos? match your filters/i');
+    await expect(photoCountText).toBeVisible();
 
-    // Get initial photo count
-    const initialCountText = await page.locator('span.text-gray-900.text-lg').first().textContent();
-    const initialCount = parseInt(initialCountText || '0', 10);
+    // Get initial photo count from the text
+    const initialText = await photoCountText.textContent();
+    const initialMatch = initialText?.match(/(\d+) photos?/i);
+    const initialCount = initialMatch ? parseInt(initialMatch[1], 10) : 0;
 
     // Click a filter (Portfolio Quality)
     const portfolioFilter = page.locator('button:has-text("Portfolio Quality")');
@@ -66,9 +67,10 @@ test.describe('Browse Page - Filter Integration', () => {
     // Wait for filter to apply
     await page.waitForTimeout(500);
 
-    // Get updated photo count
-    const updatedCountText = await page.locator('span.text-gray-900.text-lg').first().textContent();
-    const updatedCount = parseInt(updatedCountText || '0', 10);
+    // Get updated photo count from the text
+    const updatedText = await photoCountText.textContent();
+    const updatedMatch = updatedText?.match(/(\d+) photos?/i);
+    const updatedCount = updatedMatch ? parseInt(updatedMatch[1], 10) : 0;
 
     // Count should change (either increase or decrease based on filter)
     // We don't assert specific values, just that the count is reasonable
@@ -93,8 +95,8 @@ test.describe('Browse Page - Filter Integration', () => {
     await page.locator('button:has-text("Portfolio Quality")').click();
     await page.waitForTimeout(500);
 
-    // Apply second filter
-    await page.locator('button:has-text("Peak Moments")').click();
+    // Apply second filter (Print Ready is another quick filter)
+    await page.locator('button:has-text("Print Ready")').click();
     await page.waitForTimeout(500);
 
     // Get updated photo count
@@ -111,19 +113,19 @@ test.describe('Browse Page - Filter Integration', () => {
     await page.goto('/browse');
     await page.waitForLoadState('networkidle');
 
-    // Click multiple filters
+    // Click multiple quick filters
     await page.locator('button:has-text("Portfolio Quality")').click();
     await page.waitForTimeout(200);
 
     await page.locator('button:has-text("Print Ready")').click();
     await page.waitForTimeout(200);
 
-    await page.locator('button:has-text("Peak Moments")').click();
+    await page.locator('button:has-text("Social Media")').click();
     await page.waitForTimeout(200);
 
     // Verify page doesn't crash and photo count is still visible
-    const photoCountElement = page.locator('span.text-gray-500').filter({ hasText: /^photos?$/ });
-    await expect(photoCountElement).toBeVisible();
+    const photoCountText = page.locator('text=/\\d+ photos? match your filters/i');
+    await expect(photoCountText).toBeVisible();
   });
 
   /**
@@ -149,8 +151,8 @@ test.describe('Browse Page - Filter Integration', () => {
     await page.waitForTimeout(300);
 
     // Verify photo count is still visible (indicating filter worked)
-    const photoCountElement = page.locator('span.text-gray-500').filter({ hasText: /^photos?$/ });
-    await expect(photoCountElement).toBeVisible();
+    const photoCountText = page.locator('text=/\\d+ photos? match your filters/i');
+    await expect(photoCountText).toBeVisible();
   });
 
   /**
@@ -182,16 +184,12 @@ test.describe('Browse Page - Filter Integration', () => {
     await page.goto('/browse');
     await page.waitForLoadState('networkidle');
 
-    // Apply all filters to maximize chance of filtering everything out
+    // Apply all quick filters to maximize chance of filtering everything out
     await page.locator('button:has-text("Portfolio Quality")').click();
     await page.waitForTimeout(200);
     await page.locator('button:has-text("Print Ready")').click();
     await page.waitForTimeout(200);
     await page.locator('button:has-text("Social Media")').click();
-    await page.waitForTimeout(200);
-    await page.locator('button:has-text("Peak Moments")').click();
-    await page.waitForTimeout(200);
-    await page.locator('button:has-text("Golden Hour")').click();
     await page.waitForTimeout(500);
 
     // Check if either photos exist OR empty state is shown
@@ -218,18 +216,20 @@ test.describe('Browse Page - Filter Integration', () => {
     await page.goto('/browse');
     await page.waitForLoadState('networkidle');
 
-    // Get initial photo count
-    const initialCountText = await page.locator('span.text-gray-900.text-lg').first().textContent();
-    const initialCount = parseInt(initialCountText || '0', 10);
+    // Get initial photo count from the text (actual format: "X photos match your filters")
+    const photoCountText = page.locator('text=/\\d+ photos? match your filters/i');
+    const initialText = await photoCountText.textContent();
+    const initialMatch = initialText?.match(/(\d+) photos?/i);
+    const initialCount = initialMatch ? parseInt(initialMatch[1], 10) : 0;
 
-    // Apply multiple filters
+    // Apply multiple quick filters
     await page.locator('button:has-text("Portfolio Quality")').click();
     await page.waitForTimeout(200);
-    await page.locator('button:has-text("Peak Moments")').click();
+    await page.locator('button:has-text("Print Ready")').click();
     await page.waitForTimeout(500);
 
-    // If empty state appears, click Clear Filters
-    const clearFiltersButton = page.getByRole('button', { name: /clear filters/i });
+    // Look for "Clear all" button (that's the actual text in PhotoFilters.tsx)
+    const clearFiltersButton = page.getByRole('button', { name: /clear all/i });
     const isClearButtonVisible = await clearFiltersButton.count() > 0;
 
     if (isClearButtonVisible) {
@@ -237,8 +237,9 @@ test.describe('Browse Page - Filter Integration', () => {
       await page.waitForTimeout(500);
 
       // Photo count should return to initial value or close to it
-      const resetCountText = await page.locator('span.text-gray-900.text-lg').first().textContent();
-      const resetCount = parseInt(resetCountText || '0', 10);
+      const resetText = await photoCountText.textContent();
+      const resetMatch = resetText?.match(/(\d+) photos?/i);
+      const resetCount = resetMatch ? parseInt(resetMatch[1], 10) : 0;
 
       expect(resetCount).toBeGreaterThanOrEqual(0);
     }

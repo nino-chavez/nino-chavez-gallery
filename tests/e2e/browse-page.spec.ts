@@ -32,19 +32,19 @@ test.describe('Browse Page - Foundation', () => {
   });
 
   /**
-   * Test 2: Page loads with magnetic filter bar
+   * Test 2: Page loads with photo filters component
    */
-  test('should display magnetic filter bar component', async ({ page }) => {
+  test('should display photo filters component', async ({ page }) => {
     await page.goto('/browse');
     await page.waitForLoadState('networkidle');
 
-    // Check if filter bar container exists
-    const filterBar = page.locator('[class*="magnetic-filter-bar"]');
+    // Check if filter bar container exists (actual class is photo-filters)
+    const filterBar = page.locator('.photo-filters');
     await expect(filterBar).toBeVisible();
 
-    // Verify photo count is displayed (more specific selector)
-    const photoCountSpan = page.locator('span.text-gray-500').filter({ hasText: /^photos?$/ });
-    await expect(photoCountSpan).toBeVisible();
+    // Verify photo count text is displayed (actual format: "X photos match your filters")
+    const photoCountText = page.locator('text=/\\d+ photos? match your filters/i');
+    await expect(photoCountText).toBeVisible();
   });
 
   /**

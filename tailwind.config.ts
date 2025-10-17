@@ -11,11 +11,11 @@ const config: Config = {
       colors: {
         // Accent colors for primary interactive elements
         accent: {
-          DEFAULT: '#6366F1', // Primary accent (indigo-500)
-          primary: '#6366F1',
-          secondary: '#4F46E5', // Darker shade for hovers
-          hover: '#4F46E5',
-          subtle: 'rgba(99, 102, 241, 0.1)',
+          DEFAULT: '#4F46E5', // Primary accent (indigo-600) - WCAG AA compliant
+          primary: '#4F46E5',
+          secondary: '#4338CA', // Darker shade for hovers (indigo-700)
+          hover: '#4338CA',
+          subtle: 'rgba(79, 70, 229, 0.1)',
         },
 
         // Emotion palette tokens (from motion-tokens.ts)
@@ -54,6 +54,33 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Task 1.2.2: Screen reader only utility for accessible hidden content
+    function({ addUtilities }: { addUtilities: Function }) {
+      addUtilities({
+        '.sr-only': {
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: '0',
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          borderWidth: '0',
+        },
+        '.sr-only-focusable:focus': {
+          position: 'static',
+          width: 'auto',
+          height: 'auto',
+          padding: 'inherit',
+          margin: 'inherit',
+          overflow: 'visible',
+          clip: 'auto',
+          whiteSpace: 'normal',
+        },
+      });
+    },
+  ],
 };
 export default config;

@@ -56,11 +56,11 @@ test.describe('Browse Page - Story Generation Integration', () => {
     await generateButton.click();
     await page.waitForTimeout(500);
 
-    // Verify all 6 story types are present
+    // Verify all 6 story types are present (using exact names from StoryGenerationModal)
     await expect(page.locator('text=Player Highlight Reel')).toBeVisible();
     await expect(page.locator('text=Game-Winning Rally')).toBeVisible();
     await expect(page.locator('text=Season Journey')).toBeVisible();
-    await expect(page.locator('text=The Comeback')).toBeVisible();
+    await expect(page.locator('text=Comeback Story')).toBeVisible(); // Fixed: was "The Comeback"
     await expect(page.locator('text=Technical Excellence')).toBeVisible();
     await expect(page.locator('text=Emotion Spectrum')).toBeVisible();
   });
@@ -167,8 +167,8 @@ test.describe('Browse Page - Story Generation Integration', () => {
     const excellenceButton = page.locator('button', { hasText: 'Technical Excellence' });
     await excellenceButton.click();
 
-    // Click Generate Story button in modal
-    const modalGenerateButton = page.locator('.p-6 button', { hasText: 'Generate Story' });
+    // Click Generate Story button in modal (button is in footer with aria-label)
+    const modalGenerateButton = page.getByRole('button', { name: /generate selected story/i });
     await modalGenerateButton.click();
 
     // Wait for API call
@@ -177,8 +177,9 @@ test.describe('Browse Page - Story Generation Integration', () => {
     // Verify API was called with correct context
     expect(apiCalls.length).toBeGreaterThan(0);
     const apiCall = apiCalls[0];
-    expect(apiCall.storyType).toBe('technical-excellence');
-    expect(apiCall.context.browseId).toBe('all-photos');
-    expect(apiCall.context.browseName).toBe('Browse Gallery');
+    expect(apiCall.type).toBe('technical-excellence');
+    expect(apiCall.context.type).toBe('browse');
+    expect(apiCall.context.id).toBe('all-photos');
+    expect(apiCall.context.name).toBe('Browse Gallery');
   });
 });

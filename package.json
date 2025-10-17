@@ -15,6 +15,8 @@
     "enrich": "tsx scripts/enrich-local.ts",
     "enrich:smugmug": "tsx scripts/enrich-smugmug.ts",
     "sync:metadata": "tsx scripts/sync-metadata-to-supabase.ts",
+    "sync:all": "tsx scripts/sync-all-metadata.ts",
+    "backfill:smugmug": "tsx scripts/backfill-smugmug-metadata.ts",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -74,6 +76,7 @@
     "three": "^0.180.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4.1.14",
     "@types/crypto-js": "^4.2.2",
@@ -81,6 +84,7 @@
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.2",
+    "@types/three": "^0.180.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.1.6",

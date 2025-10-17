@@ -1,7 +1,9 @@
 'use client';
 
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { MOTION } from '@/lib/motion-tokens';
+import { MOTION, EMOTION_PALETTE } from '@/lib/motion-tokens';
+
+export type EmotionFilterType = 'triumph' | 'focus' | 'intensity' | 'determination' | 'excitement' | 'serenity';
 
 interface MagneticFilterOrbProps {
   label: string;
@@ -9,6 +11,10 @@ interface MagneticFilterOrbProps {
   active: boolean;
   onClick: () => void;
   magneticRadius?: number;
+  /**
+   * Optional emotion type for emotion-specific styling with glow effects
+   */
+  emotionType?: EmotionFilterType;
 }
 
 export function MagneticFilterOrb({
@@ -17,6 +23,7 @@ export function MagneticFilterOrb({
   active,
   onClick,
   magneticRadius = 100,
+  emotionType,
 }: MagneticFilterOrbProps) {
   const cursorX = useMotionValue(0);
   const cursorY = useMotionValue(0);
@@ -24,10 +31,24 @@ export function MagneticFilterOrb({
   const x = useSpring(cursorX, MOTION.spring.responsive);
   const y = useSpring(cursorY, MOTION.spring.responsive);
 
+  // Get emotion-specific color and glow if emotionType is provided
+  const emotionColor = emotionType ? EMOTION_PALETTE[emotionType]?.primary : null;
+  const emotionGlow = emotionType ? EMOTION_PALETTE[emotionType]?.glow : null;
+
   return (
     <motion.button
-      className={`btn-magnetic ${active ? 'btn-secondary active' : 'btn-secondary'} flex items-center gap-2`}
-      style={{ x, y }}
+      className={`btn-magnetic ${active ? 'btn-secondary active' : 'btn-secondary'} flex items-center gap-2 transition-all duration-300 ease-out active:scale-95`}
+      style={{
+        x,
+        y,
+        ...(emotionType && active
+          ? {
+              borderColor: emotionColor,
+              boxShadow: active ? emotionGlow : undefined,
+              color: emotionColor,
+            }
+          : {}),
+      }}
       whileHover={{
         scale: 1.05,
         transition: MOTION.spring.snappy,

@@ -7,10 +7,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { QualityGradientGrid } from '@/components/portfolio/QualityGradientGrid';
 import { PortfolioGrid } from '@/components/portfolio/PortfolioGrid';
 import { PhotoGravity } from '@/components/portfolio/PhotoGravity';
+import { MagneticFilterBar } from '@/components/filters/MagneticFilterBar';
+import { StoryGenerationModal } from '@/components/story/StoryGenerationModal';
 import { LoadingState } from '@/components/common/LoadingState';
 import { ErrorState } from '@/components/common/ErrorState';
-import { Heading, Text } from '@/components/ui';
+import { EmptyState } from '@/components/common/EmptyState';
+import { Heading, Text, Button } from '@/components/ui';
+import { useEmotion, type EmotionType } from '@/contexts/EmotionContext';
 import type { Photo } from '@/types/photo';
+import { Sparkles } from 'lucide-react';
 
 /**
  * SWR fetcher function for gallery API
@@ -30,9 +35,13 @@ type ViewMode = 'gradient' | 'grid' | '3d';
 function PortfolioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { activeEmotion } = useEmotion();
 
   // View mode state management
   const [viewMode, setViewMode] = useState<ViewMode>('gradient');
+
+  // Task 2.4.3: Story generation modal state
+  const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
 
   // Initialize view mode from URL params (Task 2.2)
   useEffect(() => {
@@ -56,9 +65,24 @@ function PortfolioPageContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Build API query based on active emotion filter
+  const apiQuery = useMemo(() => {
+    const params = new URLSearchParams({
+      portfolioWorthy: 'true',
+      minQualityScore: '8',
+    });
+
+    // Task 2.2.5: Add emotion filter to API query
+    if (activeEmotion) {
+      params.append('emotions', activeEmotion);
+    }
+
+    return `/api/gallery?${params.toString()}`;
+  }, [activeEmotion]);
+
   // SWR data fetching with caching and deduplication
   const { data, error, isLoading, mutate } = useSWR(
-    '/api/gallery?portfolioWorthy=true&minQualityScore=8',
+    apiQuery,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -99,10 +123,15 @@ function PortfolioPageContent() {
   if (isLoading) {
     return (
       <div className="portfolio-page min-h-screen">
+        {/* Task 1.2.1: Semantic header landmark */}
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
+          {/* Task 1.2.2: Single H1 per page */}
           <Heading level={1} className="mb-6">Portfolio</Heading>
         </header>
-        <LoadingState message="Loading portfolio..." />
+        {/* Task 1.2.1: Main content landmark */}
+        <main id="main-content">
+          <LoadingState message="Loading portfolio..." />
+        </main>
       </div>
     );
   }
@@ -114,23 +143,47 @@ function PortfolioPageContent() {
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
           <Heading level={1} className="mb-6">Portfolio</Heading>
         </header>
-        <ErrorState
-          message="Failed to load portfolio. Please try again."
-          onRetry={() => mutate()}
-          error={error}
-        />
+        <main id="main-content">
+          <ErrorState
+            message="Failed to load portfolio. Please try again."
+            onRetry={() => mutate()}
+            error={error}
+          />
+        </main>
       </div>
     );
   }
 
   return (
     <div className="portfolio-page min-h-screen">
-      {/* Page Header */}
+      {/* Task 1.2.1: Semantic header landmark */}
       <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
-        <Heading level={1} className="mb-6">Portfolio</Heading>
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            {/* Task 1.2.2: Single H1 per page */}
+            <Heading level={1} className="mb-2">Portfolio</Heading>
+            {/* Photo Count Display */}
+            <Text variant="caption">
+              {photos.length} portfolio photos
+            </Text>
+          </div>
 
-        {/* View Mode Toggles (Task 2.1) */}
-        <div className="flex flex-wrap gap-2 mb-4">
+          {/* Task 2.4.3: "Generate Story" CTA button */}
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setIsStoryModalOpen(true)}
+            disabled={photos.length === 0}
+            className="flex items-center gap-2"
+            aria-label="Generate story from portfolio photos"
+          >
+            <Sparkles className="w-4 h-4" aria-hidden="true" />
+            <span>Generate Story</span>
+          </Button>
+        </div>
+
+        {/* Task 1.2.1: Navigation landmark for view mode toggles */}
+        <nav className="flex flex-wrap gap-2 mb-4" aria-label="View mode selection">
           <ViewModeButton
             active={viewMode === 'gradient'}
             onClick={() => handleViewModeChange('gradient')}
@@ -149,16 +202,17 @@ function PortfolioPageContent() {
             icon="🌐"
             label="3D Gravity"
           />
-        </div>
-
-        {/* Photo Count Display */}
-        <Text variant="caption">
-          {photos.length} portfolio photos
-        </Text>
+        </nav>
       </header>
 
-      {/* Main Content Area with AnimatePresence for smooth transitions (Task 3.2) */}
-      <main className="pb-8 sm:pb-10 lg:pb-12">
+      {/* Task 1.2.1: Main content landmark with id for skip-to-content */}
+      <main id="main-content" className="pb-8 sm:pb-10 lg:pb-12">
+        {/* Task 2.2.5: MagneticFilterBar replaces PhotoFilters */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-8" aria-labelledby="filters-heading">
+          <h2 id="filters-heading" className="sr-only">Filter Photos by Emotion</h2>
+          <MagneticFilterBar />
+        </section>
+
         <AnimatePresence mode="wait">
           {/* Quality Gradient View (Task 2.3) */}
           {viewMode === 'gradient' && photos.length > 0 && (
@@ -169,10 +223,14 @@ function PortfolioPageContent() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <QualityGradientGrid
-                photos={photos}
-                onPhotoClick={handlePhotoClick}
-              />
+              <section aria-labelledby="gradient-view-heading">
+                {/* Task 1.2.2: Visually hidden heading for screen readers */}
+                <h2 id="gradient-view-heading" className="sr-only">Quality Gradient View</h2>
+                <QualityGradientGrid
+                  photos={photos}
+                  onPhotoClick={handlePhotoClick}
+                />
+              </section>
             </motion.div>
           )}
 
@@ -186,7 +244,10 @@ function PortfolioPageContent() {
               transition={{ duration: 0.4 }}
               className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
             >
-              <PortfolioGrid photos={photos} />
+              <section aria-labelledby="grid-view-heading">
+                <h2 id="grid-view-heading" className="sr-only">Grid View</h2>
+                <PortfolioGrid photos={photos} />
+              </section>
             </motion.div>
           )}
 
@@ -200,12 +261,16 @@ function PortfolioPageContent() {
               transition={{ duration: 0.4 }}
             >
               {photos.length <= 100 ? (
-                <PhotoGravity
-                  photos={photos3D}
-                  onPhotoClick={handlePhotoClick}
-                />
+                <section aria-labelledby="3d-view-heading">
+                  <h2 id="3d-view-heading" className="sr-only">3D Gravity View</h2>
+                  <PhotoGravity
+                    photos={photos3D}
+                    onPhotoClick={handlePhotoClick}
+                  />
+                </section>
               ) : (
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center py-12">
+                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center py-12" aria-labelledby="3d-limit-heading">
+                  <h2 id="3d-limit-heading" className="sr-only">3D View Limited</h2>
                   <Text variant="body" className="text-lg mb-4">
                     3D view limited to 100 photos for performance
                   </Text>
@@ -218,21 +283,34 @@ function PortfolioPageContent() {
                   >
                     Switch to Grid View
                   </button>
-                </div>
+                </section>
               )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Empty state */}
+        {/* Empty state - Task 3.1.4: Integrate EmptyState component */}
         {photos.length === 0 && (
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center py-12">
-            <Text variant="caption">
-              No portfolio photos found. Check back later!
-            </Text>
-          </div>
+          <EmptyState
+            type="portfolio"
+            action={{
+              label: 'Browse All Photos',
+              onClick: () => router.push('/browse'),
+            }}
+          />
         )}
       </main>
+
+      {/* Task 2.4.3: StoryGenerationModal integration */}
+      <StoryGenerationModal
+        isOpen={isStoryModalOpen}
+        onClose={() => setIsStoryModalOpen(false)}
+        context={{
+          type: 'portfolio',
+          id: 'portfolio',
+          name: 'Portfolio',
+        }}
+      />
     </div>
   );
 }
@@ -276,6 +354,8 @@ function ViewModeButton({ active, onClick, icon, label }: ViewModeButtonProps) {
  * Features:
  * - Fetches only portfolio-worthy photos (quality 8+) from gallery API
  * - Three view mode toggles with URL persistence
+ * - Task 2.2.5: MagneticFilterBar for emotion filtering
+ * - Task 2.4.3: "Generate Story" CTA button
  * - Responsive layout for mobile (375px), tablet (768px), desktop (1280px+)
  * - Loading and error states with retry
  * - Photo click navigation to detail page with return URL
@@ -289,7 +369,9 @@ export default function PortfolioPage() {
         <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 lg:pt-12 pb-6 sm:pb-8">
           <Heading level={1} className="mb-6">Portfolio</Heading>
         </header>
-        <LoadingState message="Loading portfolio..." />
+        <main id="main-content">
+          <LoadingState message="Loading portfolio..." />
+        </main>
       </div>
     }>
       <PortfolioPageContent />

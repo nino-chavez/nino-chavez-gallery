@@ -24,42 +24,42 @@ test.describe('Portfolio Page - UX Enhancements', () => {
 
   test('should load portfolio page with header and stats', async ({ page }) => {
     // Check page title
-    await expect(page.locator('h1')).toContainText('Portfolio Showcase');
+    await expect(page.locator('h1')).toContainText('Portfolio');
 
-    // Check description
-    await expect(page.locator('p')).toContainText('Curated collection');
+    // Check photo count is displayed
+    await expect(page.locator('text=/\\d+ portfolio photos/i')).toBeVisible();
 
     // Take screenshot
     await page.screenshot({ path: 'test-results/screenshots/portfolio-header.png', fullPage: false });
   });
 
   test('should display all three view mode toggles', async ({ page }) => {
-    // Check for Quality View button
-    const qualityBtn = page.getByRole('button', { name: /quality view/i });
+    // Check for Quality Gradient button using text locator
+    const qualityBtn = page.locator('button:has-text("Quality Gradient")');
     await expect(qualityBtn).toBeVisible();
 
-    // Check for Grid View button
-    const gridBtn = page.getByRole('button', { name: /grid view/i });
+    // Check for Grid button using text locator
+    const gridBtn = page.locator('button:has-text("Grid")');
     await expect(gridBtn).toBeVisible();
 
-    // Check for Timeline button
-    const timelineBtn = page.getByRole('button', { name: /timeline/i });
-    await expect(timelineBtn).toBeVisible();
+    // Check for 3D Gravity button using text locator
+    const gravityBtn = page.locator('button:has-text("3D Gravity")');
+    await expect(gravityBtn).toBeVisible();
 
     // Take screenshot of view mode toggles
     await page.screenshot({ path: 'test-results/screenshots/view-mode-toggles.png', fullPage: false });
   });
 
   test('should switch between view modes', async ({ page }) => {
-    // Default view should be Quality View
-    const qualityBtn = page.getByRole('button', { name: /quality view/i });
+    // Default view should be Quality Gradient
+    const qualityBtn = page.locator('button:has-text("Quality Gradient")');
     await expect(qualityBtn).toHaveClass(/bg-black/);
 
-    // Take screenshot of Quality View
-    await page.screenshot({ path: 'test-results/screenshots/quality-view.png', fullPage: true });
+    // Take screenshot of Quality Gradient View
+    await page.screenshot({ path: 'test-results/screenshots/quality-gradient-view.png', fullPage: true });
 
     // Switch to Grid View
-    const gridBtn = page.getByRole('button', { name: /grid view/i });
+    const gridBtn = page.locator('button:has-text("Grid")');
     await gridBtn.click();
     await page.waitForTimeout(500); // Wait for transition
 
@@ -67,14 +67,14 @@ test.describe('Portfolio Page - UX Enhancements', () => {
     await expect(gridBtn).toHaveClass(/bg-black/);
     await page.screenshot({ path: 'test-results/screenshots/grid-view.png', fullPage: true });
 
-    // Switch to Timeline
-    const timelineBtn = page.getByRole('button', { name: /timeline/i });
-    await timelineBtn.click();
+    // Switch to 3D Gravity
+    const gravityBtn = page.locator('button:has-text("3D Gravity")');
+    await gravityBtn.click();
     await page.waitForTimeout(500);
 
-    // Verify Timeline is active
-    await expect(timelineBtn).toHaveClass(/bg-black/);
-    await page.screenshot({ path: 'test-results/screenshots/timeline-view.png', fullPage: true });
+    // Verify 3D Gravity is active
+    await expect(gravityBtn).toHaveClass(/bg-black/);
+    await page.screenshot({ path: 'test-results/screenshots/3d-gravity-view.png', fullPage: true });
   });
 
   test('should display Magnetic Filter Bar', async ({ page }) => {

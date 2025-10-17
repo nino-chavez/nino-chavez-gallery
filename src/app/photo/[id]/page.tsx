@@ -1,5 +1,6 @@
 import { PhotoDetail } from '@/components/photo/PhotoDetail';
 import { Heading, Text } from '@/components/ui';
+import { EmotionAmbience, type EmotionType } from '@/components/transitions';
 import { createClient } from '@/lib/supabase/server';
 import type { Photo } from '@/types/photo';
 
@@ -24,7 +25,11 @@ export default async function PhotoPage({ params }: PhotoPageProps) {
     );
   }
 
-  return <PhotoDetail photo={photo} />;
+  return (
+    <EmotionAmbience emotion={photo.metadata?.emotion as EmotionType}>
+      <PhotoDetail photo={photo} />
+    </EmotionAmbience>
+  );
 }
 
 // Server action to fetch photo with metadata

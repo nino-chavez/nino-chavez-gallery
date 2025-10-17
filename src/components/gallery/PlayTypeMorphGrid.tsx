@@ -5,14 +5,70 @@ import Image from 'next/image';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { PLAY_TYPE_ICONS, MOTION } from '@/lib/motion-tokens';
 import { Text } from '@/components/ui';
-import { PhotoSkeleton } from '@/components/common/PhotoSkeleton';
+import { PhotoGridSkeleton } from '@/components/common/Skeleton';
 import type { Photo } from '@/types/photo';
+import type { EmotionType } from '@/components/transitions';
 
 interface PlayTypeMorphGridProps {
   photos: Photo[];
   activePlayType: string | null;
   isLoading?: boolean;
   onPhotoClick?: (photo: Photo) => void;
+}
+
+/**
+ * Get emotion-specific hover configuration
+ * Each emotion has a unique hover behavior for contextual micro-interactions
+ */
+function getEmotionHoverConfig(emotion?: string) {
+  const easeOut = [0.16, 1, 0.3, 1] as const;
+  const easeInOut = [0.42, 0, 0.58, 1] as const;
+
+  switch (emotion as EmotionType) {
+    case 'serenity':
+      // Gentle, minimal zoom for calm photos
+      return {
+        scale: 1.05,
+        transition: { duration: 0.6, ease: easeOut },
+      };
+    case 'excitement':
+      // Fast, energetic zoom for dynamic photos
+      return {
+        scale: 1.15,
+        transition: { duration: 0.2, ease: easeOut },
+      };
+    case 'intensity':
+      // Strong zoom for powerful photos
+      return {
+        scale: 1.12,
+        transition: { duration: 0.3, ease: easeOut },
+      };
+    case 'triumph':
+      // Scale with upward motion bias
+      return {
+        scale: 1.1,
+        y: -8,
+        transition: { duration: 0.4, ease: easeOut },
+      };
+    case 'focus':
+      // Steady, controlled zoom
+      return {
+        scale: 1.08,
+        transition: { duration: 0.4, ease: easeInOut },
+      };
+    case 'determination':
+      // Firm, deliberate zoom
+      return {
+        scale: 1.1,
+        transition: { duration: 0.35, ease: easeOut },
+      };
+    default:
+      // Default moderate zoom
+      return {
+        scale: 1.1,
+        transition: { duration: 0.5, ease: easeOut },
+      };
+  }
 }
 
 export function PlayTypeMorphGrid({
@@ -28,16 +84,14 @@ export function PlayTypeMorphGrid({
 
   return (
     <LayoutGroup>
-      <motion.div
-        layout
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-8 pb-12"
-      >
-        {isLoading ? (
-          // Display skeleton placeholders during loading (12 items)
-          Array.from({ length: 12 }).map((_, index) => (
-            <PhotoSkeleton key={`skeleton-${index}`} />
-          ))
-        ) : (
+      {/* Task 1.3.2: Skeleton loaders during loading state */}
+      {isLoading ? (
+        <PhotoGridSkeleton count={12} variant="masonry" />
+      ) : (
+        <motion.div
+          layout
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-8 pb-12"
+        >
           <AnimatePresence mode="popLayout">
             {visiblePhotos.map(photo => (
               <motion.div
@@ -51,20 +105,24 @@ export function PlayTypeMorphGrid({
                   opacity: { duration: MOTION.duration.fast },
                   scale: { duration: MOTION.duration.fast },
                 }}
+                whileHover={getEmotionHoverConfig(photo.metadata?.emotion)}
                 className="card-base hover-lift relative group cursor-pointer"
                 onClick={() => onPhotoClick?.(photo)}
               >
-                {/* Photo card */}
+                {/* Photo card with overflow-hidden for emotion-driven zoom effect */}
                 <div className="relative overflow-hidden rounded-xl aspect-[4/3]">
-                  <Image
-                    src={photo.image_url}
-                    alt={photo.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    quality={85}
-                  />
+                  {/* Image with emotion-driven zoom on hover */}
+                  <motion.div className="relative w-full h-full">
+                    <Image
+                      src={photo.image_url}
+                      alt={photo.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover"
+                      loading="lazy"
+                      quality={85}
+                    />
+                  </motion.div>
 
                   {/* Play type badge - clean design */}
                   {photo.metadata?.play_type && (
@@ -95,9 +153,10 @@ export function PlayTypeMorphGrid({
                     )}
                   </div>
 
-                  {/* Hover overlay with metadata - clean design */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center p-6">
-                    <div className="text-white text-center w-full">
+                  {/* Dark overlay with fade-in transition */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/0 to-transparent group-hover:from-black/80 transition-all duration-300 flex items-end justify-center p-6">
+                    {/* Metadata with fade-in effect */}
+                    <div className="text-white text-center w-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <Text variant="body" className="text-xl font-bold mb-3 text-white">{photo.title}</Text>
                       {photo.metadata && (
                         <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 space-y-2">
@@ -124,8 +183,8 @@ export function PlayTypeMorphGrid({
               </motion.div>
             ))}
           </AnimatePresence>
-        )}
-      </motion.div>
+        </motion.div>
+      )}
     </LayoutGroup>
   );
 }

@@ -51,6 +51,20 @@ interface Photo {
   thumbnailUrl: string;
   width: number;
   height: number;
+  // SmugMug metadata for Supabase
+  photoDate?: string;          // DateTimeOriginal from EXIF
+  dateAdded?: string;           // When added to album
+  aspectRatio?: number;
+  cameraMode?: string;
+  cameraModel?: string;
+  lensModel?: string;
+  focalLength?: string;
+  aperture?: string;
+  shutterSpeed?: string;
+  iso?: number;
+  latitude?: number;
+  longitude?: number;
+  locationName?: string;
 }
 
 interface Album {
@@ -207,6 +221,11 @@ async function processAlbum(album: any): Promise<Album> {
     // Get image URLs
     const urls = getImageSizes(image);
 
+    // Calculate aspect ratio
+    const width = image.OriginalWidth || 0;
+    const height = image.OriginalHeight || 0;
+    const aspectRatio = width && height ? parseFloat((width / height).toFixed(3)) : undefined;
+
     photos.push({
       imageKey: image.ImageKey,
       fileName: image.FileName,
@@ -216,8 +235,22 @@ async function processAlbum(album: any): Promise<Album> {
       uploadDate: image.UploadDate || image.DateAdded,
       imageUrl: urls.display,
       thumbnailUrl: urls.thumbnail,
-      width: image.OriginalWidth || 0,
-      height: image.OriginalHeight || 0,
+      width,
+      height,
+      // SmugMug metadata (for Supabase sync)
+      photoDate: image.DateTimeOriginal || image.UploadDate || image.DateAdded,
+      dateAdded: image.DateAdded,
+      aspectRatio,
+      cameraMode: image.CameraMake,
+      cameraModel: image.CameraModel,
+      lensModel: image.LensModel,
+      focalLength: image.FocalLength,
+      aperture: image.Aperture,
+      shutterSpeed: image.ShutterSpeed,
+      iso: image.ISO ? parseInt(image.ISO) : undefined,
+      latitude: image.Latitude,
+      longitude: image.Longitude,
+      locationName: image.Location,
     });
   }
 

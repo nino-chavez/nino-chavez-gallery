@@ -1,0 +1,119 @@
+[
+  {
+    "name": "audit-homepage-initial",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-homepage-initial.png",
+    "url": "http://localhost:3000",
+    "description": "Homepage initial load state",
+    "observations": []
+  },
+  {
+    "name": "audit-portfolio-default",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-portfolio-default.png",
+    "url": "http://localhost:3000/portfolio",
+    "description": "Portfolio grid default view",
+    "observations": []
+  },
+  {
+    "name": "audit-portfolio-filters-expanded",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-portfolio-filters-expanded.png",
+    "url": "http://localhost:3000/portfolio",
+    "description": "Portfolio grid with filters panel expanded",
+    "observations": [
+      "⚠️ No <main> landmark found",
+      "⚠️ No H1 heading found"
+    ]
+  },
+  {
+    "name": "audit-portfolio-hover-state",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-portfolio-hover-state.png",
+    "url": "http://localhost:3000/portfolio",
+    "description": "Portfolio grid item hover state",
+    "observations": [
+      "⚠️ No <main> landmark found",
+      "⚠️ No H1 heading found"
+    ]
+  },
+  {
+    "name": "audit-browse-grid",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-browse-grid.png",
+    "url": "http://localhost:3000/browse",
+    "description": "Browse page grid layout",
+    "observations": []
+  },
+  {
+    "name": "audit-browse-filters-active",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-browse-filters-active.png",
+    "url": "http://localhost:3000/browse",
+    "description": "Browse page with filter interactions",
+    "observations": []
+  },
+  {
+    "name": "audit-story-viewer-interface",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-story-viewer-interface.png",
+    "url": "http://localhost:3000/stories/1",
+    "description": "Story viewer interface (fallback ID)",
+    "observations": [
+      "⚠️ No <main> landmark found",
+      "⚠️ No H1 heading found"
+    ]
+  },
+  {
+    "name": "audit-search-interface",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-search-interface.png",
+    "url": "http://localhost:3000/search",
+    "description": "Search interface default state",
+    "observations": []
+  },
+  {
+    "name": "audit-search-results",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-search-results.png",
+    "url": "http://localhost:3000/search",
+    "description": "Search results view",
+    "observations": []
+  },
+  {
+    "name": "audit-album-view",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-album-view.png",
+    "url": "http://localhost:3000/album/2Xv5JS",
+    "description": "Album view with photos",
+    "observations": []
+  },
+  {
+    "name": "audit-mobile-homepage",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-mobile-homepage.png",
+    "url": "http://localhost:3000",
+    "description": "Homepage mobile view",
+    "observations": []
+  },
+  {
+    "name": "audit-mobile-portfolio",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-mobile-portfolio.png",
+    "url": "http://localhost:3000/portfolio",
+    "description": "Portfolio mobile view",
+    "observations": [
+      "⚠️ No <main> landmark found",
+      "⚠️ No H1 heading found"
+    ]
+  },
+  {
+    "name": "audit-mobile-browse",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-mobile-browse.png",
+    "url": "http://localhost:3000/browse",
+    "description": "Browse page mobile view",
+    "observations": []
+  },
+  {
+    "name": "audit-tablet-homepage",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-tablet-homepage.png",
+    "url": "http://localhost:3000",
+    "description": "Homepage tablet view",
+    "observations": []
+  },
+  {
+    "name": "audit-tablet-portfolio",
+    "path": "/Users/nino/Workspace/02-local-dev/sites/nino-chavez-gallery/screenshots/audit/audit-tablet-portfolio.png",
+    "url": "http://localhost:3000/portfolio",
+    "description": "Portfolio tablet view",
+    "observations": []
+  }
+]

@@ -13,9 +13,10 @@ import { test, expect } from '@playwright/test';
  * Run with: pnpm test:journey
  */
 
-test.describe('Photographer Journey: Portfolio Curation', () => {
-  test.use({ video: 'on' }); // Record video for review
+// Record video for all tests in this file
+test.use({ video: 'on' });
 
+test.describe('Photographer Journey: Portfolio Curation', () => {
   test('Complete curation workflow', async ({ page }) => {
     const startTime = Date.now();
 
